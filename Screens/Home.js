@@ -14,18 +14,17 @@ const categories = [
 ];
 
 const HomeScreen = ({ navigation, route }) => {
-  const { mobile } = route.params;
+ console.log("Home route params:", route.params); // 👈 add this
+
+  const { mobile } = route.params || {}; // 👈 safe access
 
   const handleCategoryPress = (category) => {
-    db.transaction(tx => {
-      tx.executeSql(
-        'UPDATE Users SET category=? WHERE mobile=?',
-        [category.name, mobile],
-        () => navigation.replace(category.screen, { mobile }),
-        err => console.log('Update error:', err)
-      );
-    });
+    console.log("Category pressed:", category.name, "Mobile:", mobile);
+
+    // 🚨 Temporarily bypass DB to test navigation
+    navigation.navigate(category.screen, { mobile });
   };
+
 
   return (
     <View style={styles.container}>

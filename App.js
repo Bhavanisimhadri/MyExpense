@@ -21,12 +21,12 @@ export default function App() {
            <Stack.Screen name="SignUp" component={SignUpScreen} options={{ headerShown: false  }} />
       <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false  }} />
       <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false  }} />
-       <Stack.Screen name="WomenScreen" component={WomenScreen} />
-        <Stack.Screen name="MenScreen" component={MenScreen} />
-        <Stack.Screen name="StudentScreen" component={StudentScreen} />
-        <Stack.Screen name="ElderScreen" component={ElderScreen} />
-        <Stack.Screen name="PartnersScreen" component={PartnersScreen} />
-        <Stack.Screen name="FriendsScreen" component={FriendsScreen} />
+       <Stack.Screen name="WomenScreen" component={WomenScreen} options={{ headerShown: false  }} />
+        <Stack.Screen name="MenScreen" component={MenScreen} options={{ headerShown: false  }} />
+        <Stack.Screen name="StudentScreen" component={StudentScreen} options={{ headerShown: false  }}  />
+        <Stack.Screen name="ElderScreen" component={ElderScreen} options={{ headerShown: false  }} />
+        <Stack.Screen name="PartnersScreen" component={PartnersScreen} options={{ headerShown: false  }} />
+        <Stack.Screen name="FriendsScreen" component={FriendsScreen} options={{ headerShown: false  }} />
       </Stack.Navigator>
     </NavigationContainer>
   );
