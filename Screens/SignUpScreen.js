@@ -9,17 +9,15 @@ const SignUpScreen = ({ navigation }) => {
   const [mobile, setMobile] = useState('');
 
   // Ensure Users table exists before using it
-  useEffect(() => {
+ useEffect(() => {
     db.transaction(tx => {
       tx.executeSql(
         `CREATE TABLE IF NOT EXISTS Users (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           name TEXT,
-          mobile TEXT UNIQUE
-        );`,
-        [],
-        () => console.log('Users table ready'),
-        err => console.log('Table creation error:', err)
+          mobile TEXT UNIQUE,
+          category TEXT
+        );`
       );
     });
   }, []);
@@ -27,12 +25,10 @@ const SignUpScreen = ({ navigation }) => {
   const handleSignUp = () => {
     const trimmedName = name.trim();
     const trimmedMobile = mobile.trim();
-
     if (!trimmedName) return Alert.alert('Error', 'Enter your name');
     if (trimmedMobile.length !== 10) return Alert.alert('Error', 'Enter a valid 10-digit number');
 
     db.transaction(tx => {
-      // Check if mobile exists
       tx.executeSql(
         'SELECT * FROM Users WHERE mobile = ?',
         [trimmedMobile],
@@ -40,25 +36,15 @@ const SignUpScreen = ({ navigation }) => {
           if (results.rows.length > 0) {
             Alert.alert('Error', 'Mobile number already exists');
           } else {
-            // Insert new user
             tx.executeSql(
               'INSERT INTO Users (name, mobile) VALUES (?, ?)',
               [trimmedName, trimmedMobile],
-              () => {
-                Alert.alert('Success', `Account created for ${trimmedName}`);
-                navigation.replace('Login');
-              },
-              err => {
-                console.log('Insert error:', err);
-                Alert.alert('Error', 'Failed to create account');
-              }
+              () => navigation.replace('Home', { mobile: trimmedMobile }),
+              err => console.log('Insert error:', err)
             );
           }
         },
-        err => {
-          console.log('Select error:', err);
-          Alert.alert('Error', 'Failed to check mobile number');
-        }
+        err => console.log('Select error:', err)
       );
     });
   };

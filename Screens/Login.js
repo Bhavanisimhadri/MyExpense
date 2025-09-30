@@ -18,26 +18,29 @@ const LoginScreen = ({ navigation }) => {
 
   // Create Users table if not exists (drop old table in dev)
  useEffect(() => {
-  db.transaction(tx => {
-    // Don't drop table, just ensure it exists
-    tx.executeSql(
-      'CREATE TABLE IF NOT EXISTS Users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, mobile TEXT UNIQUE);',
-      [],
-      () => console.log('Users table ready'),
-      err => console.log('Table creation error:', err)
-    );
-  });
+    db.transaction(tx => {
+      tx.executeSql(
+        `CREATE TABLE IF NOT EXISTS Users (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT,
+          mobile TEXT UNIQUE,
+          category TEXT
+        );`,
+        [],
+        () => console.log('Users table ready'),
+        err => console.log('Table creation error:', err)
+      );
+    });
 
-  const loadRemembered = async () => {
-    const savedMobile = await AsyncStorage.getItem('rememberedMobile');
-    if (savedMobile) {
-      setMobile(savedMobile);
-      setRememberMe(true);
-    }
-  };
-  loadRemembered();
-}, []);
-
+    const loadRemembered = async () => {
+      const savedMobile = await AsyncStorage.getItem('rememberedMobile');
+      if (savedMobile) {
+        setMobile(savedMobile);
+        setRememberMe(true);
+      }
+    };
+    loadRemembered();
+  }, []);
 
   const handleContinue = () => {
     if (mobile.length !== 10) return Alert.alert('Error', 'Enter a valid 10-digit number');
@@ -48,12 +51,25 @@ const LoginScreen = ({ navigation }) => {
         [mobile],
         async (_, results) => {
           if (results.rows.length > 0) {
-            if (rememberMe) {
-              await AsyncStorage.setItem('rememberedMobile', mobile);
+            const user = results.rows.item(0);
+            if (rememberMe) await AsyncStorage.setItem('rememberedMobile', mobile);
+            else await AsyncStorage.removeItem('rememberedMobile');
+
+            if (user.category) {
+              const screenMap = {
+                Women: 'WomenScreen',
+                Men: 'MenScreen',
+                Student: 'StudentScreen',
+                Elder: 'ElderScreen',
+                Partners: 'PartnersScreen',
+                Friends: 'FriendsScreen',
+              };
+              navigation.replace(screenMap[user.category], { mobile });
             } else {
-              await AsyncStorage.removeItem('rememberedMobile');
+              navigation.replace('Home', { mobile });
             }
-            navigation.navigate('Home'); // redirect to Home
+          } else {
+            navigation.navigate('SignUp', { mobile });
           }
         },
         err => console.log('Select error:', err)
