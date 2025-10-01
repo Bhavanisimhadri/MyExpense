@@ -28,12 +28,28 @@ const LoginScreen = ({ navigation }) => {
       );`
     );
 
-    // Ensure category column exists
+    // Check if category column exists, add if not
     tx.executeSql(
-      `ALTER TABLE Users ADD COLUMN category TEXT;`,
+      `PRAGMA table_info(Users);`,
       [],
-      () => console.log("Category column added"),
-      (err) => console.log("Alter error (maybe already exists):", err)
+      (_, result) => {
+        const columns = [];
+        for (let i = 0; i < result.rows.length; i++) {
+          columns.push(result.rows.item(i).name);
+        }
+        
+        if (!columns.includes('category')) {
+          tx.executeSql(
+            `ALTER TABLE Users ADD COLUMN category TEXT;`,
+            [],
+            () => console.log("✅ Category column added successfully"),
+            (err) => console.log("❌ Error adding category column:", err)
+          );
+        } else {
+          console.log("✅ Category column already exists");
+        }
+      },
+      (err) => console.log("❌ Error checking table structure:", err)
     );
   });
 }, []);
