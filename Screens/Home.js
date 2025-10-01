@@ -16,7 +16,8 @@ const categories = [
 const HomeScreen = ({ navigation, route }) => {
   console.log("Home route params:", route.params);
 
-  const { mobile } = route.params || {};
+  const { mobile, name } = route.params || {};
+  console.log("Home screen - mobile:", mobile, "name:", name);
 
   const handleCategoryPress = (category) => {
     console.log("Category pressed:", category.name, "Mobile:", mobile);
@@ -30,8 +31,8 @@ const HomeScreen = ({ navigation, route }) => {
             console.log("✅ Category saved:", category.name, "Rows affected:", result.rowsAffected);
 
             if (result.rowsAffected > 0) {
-              console.log("➡️ Navigating to Login");
-              navigation.replace(category.screen, { mobile });
+              console.log("➡️ Navigating to", category.screen, "with mobile:", mobile, "name:", name);
+              navigation.replace(category.screen, { mobile, name });
             } else {
               console.log("⚠️ No row updated! Mobile may not exist:", mobile);
               Alert.alert("Error", "User not found in database.");

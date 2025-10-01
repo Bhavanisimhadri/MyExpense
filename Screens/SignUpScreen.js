@@ -48,7 +48,10 @@ const SignUpScreen = ({ navigation }) => {
             tx.executeSql(
               'INSERT INTO Users (name, mobile) VALUES (?, ?)',
               [trimmedName, trimmedMobile],
-              () => navigation.replace('Home', { mobile: trimmedMobile }),
+              () => {
+                console.log("SignUp - Navigating to Home with:", { mobile: trimmedMobile, name: trimmedName });
+                navigation.replace('Home', { mobile: trimmedMobile, name: trimmedName });
+              },
               err => console.log('Insert error:', err)
             );
           }

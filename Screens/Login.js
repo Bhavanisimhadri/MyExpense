@@ -49,6 +49,8 @@ const LoginScreen = ({ navigation }) => {
         async (_, results) => {
           if (results.rows.length > 0) {
             const user = results.rows.item(0);
+            console.log("Login - Found user:", user);
+            
             if (rememberMe) await AsyncStorage.setItem('rememberedMobile', mobile);
             else await AsyncStorage.removeItem('rememberedMobile');
 
@@ -61,9 +63,11 @@ const LoginScreen = ({ navigation }) => {
                 Partners: 'PartnersScreen',
                 Friends: 'FriendsScreen',
               };
-              navigation.replace(screenMap[user.category], { mobile });
+              console.log("Login - Navigating to category screen with:", { mobile, name: user.name });
+              navigation.replace(screenMap[user.category], { mobile, name: user.name });
             } else {
-              navigation.replace('Home', { mobile });
+              console.log("Login - Navigating to Home with:", { mobile, name: user.name });
+              navigation.replace('Home', { mobile, name: user.name });
             }
           } else {
             navigation.navigate('SignUp', { mobile });

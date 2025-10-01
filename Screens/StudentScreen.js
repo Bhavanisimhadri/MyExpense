@@ -14,8 +14,11 @@ import SQLite from 'react-native-sqlite-storage';
 
 const db = SQLite.openDatabase({ name: 'ExpenseDB.db', location: 'default' });
 
-const StudentScreen = ({ route }) => {
-  const { mobile } = route.params;
+const StudentScreen = ({ route, navigation }) => {
+  console.log("StudentScreen route params:", route.params);
+  const { mobile, name } = route.params;
+  console.log("Extracted mobile:", mobile);
+  console.log("Extracted name:", name);
   const [expenses, setExpenses] = useState([]);
   const [monthlyBudget, setMonthlyBudget] = useState(0);
   const [totalSpent, setTotalSpent] = useState(0);
@@ -220,8 +223,37 @@ const StudentScreen = ({ route }) => {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Student Expense Tracker</Text>
-        <Text style={styles.subtitle}>Welcome, {mobile}</Text>
+        <View style={styles.headerTop}>
+          <View>
+            <Text style={styles.title}>Student Expense Tracker</Text>
+            <Text style={styles.subtitle}>Welcome, {name}</Text>
+          </View>
+          <TouchableOpacity 
+            style={styles.logoutButton} 
+            onPress={() => {
+              Alert.alert(
+                'Logout',
+                'Are you sure you want to logout?',
+                [
+                  {
+                    text: 'Cancel',
+                    style: 'cancel',
+                  },
+                  {
+                    text: 'Logout',
+                    style: 'destructive',
+                    onPress: () => {
+                      // Navigate back to login screen
+                      navigation.replace('Login');
+                    },
+                  },
+                ],
+              );
+            }}
+          >
+            <Text style={styles.logoutText}>Logout</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Period Selection */}
@@ -447,6 +479,12 @@ const styles = StyleSheet.create({
     paddingTop: 50,
     paddingBottom: 20,
   },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    minHeight: 60,
+  },
   title: { 
     fontSize: 24, 
     fontWeight: 'bold', 
@@ -456,6 +494,26 @@ const styles = StyleSheet.create({
   subtitle: { 
     fontSize: 16, 
     color: '#E3F2FD' 
+  },
+  logoutButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 25,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
+    alignSelf: 'flex-end',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  logoutText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
   },
   budgetCard: {
     backgroundColor: '#fff',
