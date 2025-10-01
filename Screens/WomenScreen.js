@@ -16,7 +16,7 @@ import {
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const WomenScreen = ({ route,navigation  }) => {
+const WomenScreen = ({ route, navigation }) => {
   const { name, mobileNumber } = route.params; // mobileNumber is used as a key for storage
 
   const [selectedSection, setSelectedSection] = useState(null);
@@ -285,6 +285,10 @@ const WomenScreen = ({ route,navigation  }) => {
   const renderReports = () => {
     const yearlyReports = {};
 
+
+    // Better: get directly from bucketList
+    const accomplishedBuckets = bucketList.filter(item => item.done);
+
     // Group data by year and month
     Object.keys(allFinancialData).forEach(key => {
       const [_, year, month] = key.split('_');
@@ -324,6 +328,18 @@ const WomenScreen = ({ route,navigation  }) => {
               <Text style={styles.reportSummaryText}>Yearly Income: ${yearlyReports[year].totalIncome.toFixed(2)}</Text>
               <Text style={styles.reportSummaryText}>Yearly Savings: ${yearlyReports[year].totalSavings.toFixed(2)}</Text>
               <Text style={styles.reportSummaryText}>Yearly Spent: ${yearlyReports[year].totalSpent.toFixed(2)}</Text>
+              {bucketList.filter(item => item.done).length > 0 && (
+                <View style={{ marginTop: 5 }}>
+                  <Text style={styles.reportHighlightText}>Accomplished Bucket items:</Text>
+                  {bucketList
+                    .filter(item => item.done)
+                    .map((item, index) => (
+                      <Text key={index} style={styles.reportHighlightText}>
+                        - {item.item}
+                      </Text>
+                    ))}
+                </View>
+              )}
 
               {Object.keys(yearlyReports[year].months).sort((a, b) => b - a).map(month => {
                 const monthData = yearlyReports[year].months[month];
@@ -389,7 +405,7 @@ const WomenScreen = ({ route,navigation  }) => {
                     {
                       text: "Logout", onPress: async () => {
                         // clear user data
-                        navigation.navigate('Login'); 
+                        navigation.navigate('Login');
                       }
                     }
                   ]
