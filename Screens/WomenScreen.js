@@ -15,9 +15,9 @@ import {
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
+import DatabaseHelper from '../Screens/DatabaseHelper';
 const WomenScreen = ({ route, navigation }) => {
-  const { name, mobileNumber } = route.params; // mobileNumber is used as a key for storage
+   const { name, mobile } = route.params;  // mobileNumber is used as a key for storage
 
   const [selectedSection, setSelectedSection] = useState(null);
   const [showReports, setShowReports] = useState(false);
@@ -62,45 +62,40 @@ const WomenScreen = ({ route, navigation }) => {
     return () => backHandler.remove();
   }, []);
 
-  const userStorageKey = `@userData_${mobileNumber}`;
+  
 
-  useEffect(() => {
+    useEffect(() => {
     const loadData = async () => {
       try {
-        const storedData = await AsyncStorage.getItem(userStorageKey);
-        if (storedData) {
-          const parsedData = JSON.parse(storedData);
-
-          // Load current month's financial data
-          const currentFinancials = parsedData[financialDataKey];
-          if (currentFinancials) {
-            setMonthlyIncome(currentFinancials.monthlyIncome || '');
-            setSavings(currentFinancials.savings || '');
-            setNeeds(currentFinancials.needs && currentFinancials.needs.length > 0 ? currentFinancials.needs : [{ element: '', amount: '' }]);
-            setWants(currentFinancials.wants && currentFinancials.wants.length > 0 ? currentFinancials.wants : [{ element: '', amount: '' }]);
-          }
-
-          // Load persistent data
-          setNotes(parsedData.notes && parsedData.notes.length > 0 ? parsedData.notes : ['']);
-          setBucketList(parsedData.bucketList && parsedData.bucketList.length > 0 ? parsedData.bucketList : [{ item: '', done: false }]);
-
-          // Load all financial data for reports
-          const financials = {};
-          Object.keys(parsedData).forEach(key => {
-            if (key.startsWith('financials_')) {
-              financials[key] = parsedData[key];
-            }
-          });
-          setAllFinancialData(financials);
+        // Load current month's financial data
+        const currentFinancials = await DatabaseHelper.getUserData(mobile, financialDataKey);
+        if (currentFinancials) {
+          setMonthlyIncome(currentFinancials.monthlyIncome || '');
+          setSavings(currentFinancials.savings || '');
+          setNeeds(currentFinancials.needs && currentFinancials.needs.length > 0 ? currentFinancials.needs : [{ element: '', amount: '' }]);
+          setWants(currentFinancials.wants && currentFinancials.wants.length > 0 ? currentFinancials.wants : [{ element: '', amount: '' }]);
         }
+
+        // Load persistent data
+        const notesData = await DatabaseHelper.getUserData(mobile, 'notes');
+        setNotes(notesData && notesData.length > 0 ? notesData : ['']);
+
+        const bucketListData = await DatabaseHelper.getUserData(mobile, 'bucketList');
+        setBucketList(bucketListData && bucketListData.length > 0 ? bucketListData : [{ item: '', done: false }]);
+
+        // Load all financial data for reports
+        const allFinancials = await DatabaseHelper.getAllUserFinancialKeys(mobile);
+        setAllFinancialData(allFinancials);
+
       } catch (error) {
-        console.error("Failed to load data from storage", error);
+        console.error("Failed to load data from database", error);
       }
     };
 
     loadData();
-  }, [mobileNumber]);
+  }, [mobile]);
 
+  // Save data to SQLite
   useEffect(() => {
     const saveData = async () => {
       try {
@@ -111,20 +106,20 @@ const WomenScreen = ({ route, navigation }) => {
           wants,
         };
 
-        const dataToStore = {
-          ...allFinancialData,
-          [financialDataKey]: currentFinancials,
-          notes,
-          bucketList,
-        };
-        await AsyncStorage.setItem(userStorageKey, JSON.stringify(dataToStore));
+        // Save current month's financial data
+        await DatabaseHelper.saveUserData(mobile, financialDataKey, currentFinancials);
+        
+        // Save persistent data
+        await DatabaseHelper.saveUserData(mobile, 'notes', notes);
+        await DatabaseHelper.saveUserData(mobile, 'bucketList', bucketList);
+
       } catch (error) {
-        console.error("Failed to save data to storage", error);
+        console.error("Failed to save data to database", error);
       }
     };
 
     saveData();
-  }, [monthlyIncome, savings, needs, wants, notes, bucketList, mobileNumber]);
+  }, [monthlyIncome, savings, needs, wants, notes, bucketList, mobile]);
 
 
   // --- Calculation Logic (Memoized for performance) ---

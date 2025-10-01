@@ -9,23 +9,32 @@ const SignUpScreen = ({ navigation }) => {
   const [mobile, setMobile] = useState('');
 
   // Ensure Users table exists before using it
- useEffect(() => {
+// Add this to your existing table creation logic
+useEffect(() => {
   db.transaction(tx => {
-    // Create table if not exists
+    // Create Users table if not exists
     tx.executeSql(
       `CREATE TABLE IF NOT EXISTS Users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT,
-        mobile TEXT UNIQUE
+        mobile TEXT UNIQUE,
+        category TEXT
       );`
     );
 
-    // Ensure category column exists
+    // Create UserFinancialData table for storing all financial information
     tx.executeSql(
-      `ALTER TABLE Users ADD COLUMN category TEXT;`,
+      `CREATE TABLE IF NOT EXISTS UserFinancialData (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        mobile TEXT,
+        data_key TEXT,
+        data_value TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(mobile, data_key)
+      );`,
       [],
-      () => console.log("Category column added"),
-      (err) => console.log("Alter error (maybe already exists):", err)
+      () => console.log("UserFinancialData table created/verified"),
+      (err) => console.log("Table creation error:", err)
     );
   });
 }, []);
