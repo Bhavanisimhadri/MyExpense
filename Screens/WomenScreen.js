@@ -10,12 +10,13 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
-  Alert
+  Alert,
+  BackHandler
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const WomenScreen = ({ route }) => {
+const WomenScreen = ({ route,navigation  }) => {
   const { name, mobileNumber } = route.params; // mobileNumber is used as a key for storage
 
   const [selectedSection, setSelectedSection] = useState(null);
@@ -40,6 +41,26 @@ const WomenScreen = ({ route }) => {
   const financialDataKey = `financials_${currentYear}_${currentMonth}`;
 
   // --- Data Persistence Logic ---
+  useEffect(() => {
+    const backAction = () => {
+      Alert.alert(
+        "Exit App",
+        "Are you sure you want to exit?",
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Yes", onPress: () => BackHandler.exitApp() }
+        ]
+      );
+      return true; // prevent default behavior
+    };
+
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      backAction
+    );
+
+    return () => backHandler.remove();
+  }, []);
 
   const userStorageKey = `@userData_${mobileNumber}`;
 
@@ -109,7 +130,7 @@ const WomenScreen = ({ route }) => {
   // --- Calculation Logic (Memoized for performance) ---
 
   const parseAmount = (amountStr) => {
-    const num = parseFloat(String(amountStr).replace(/[^0-9.-]+/g,""));
+    const num = parseFloat(String(amountStr).replace(/[^0-9.-]+/g, ""));
     return isNaN(num) ? 0 : num;
   };
 
@@ -266,82 +287,82 @@ const WomenScreen = ({ route }) => {
 
     // Group data by year and month
     Object.keys(allFinancialData).forEach(key => {
-        const [_, year, month] = key.split('_');
-        if (!yearlyReports[year]) {
-            yearlyReports[year] = { months: {}, totalSpent: 0, totalIncome: 0, totalSavings: 0 };
-        }
-        const data = allFinancialData[key];
-        const monthlyNeeds = (data.needs || []).reduce((sum, item) => sum + parseAmount(item.amount), 0);
-        const monthlyWants = (data.wants || []).reduce((sum, item) => sum + parseAmount(item.amount), 0);
-        const monthlySpent = monthlyNeeds + monthlyWants;
-        const monthlyIncomeVal = parseAmount(data.monthlyIncome);
-        const monthlySavingsVal = parseAmount(data.savings);
+      const [_, year, month] = key.split('_');
+      if (!yearlyReports[year]) {
+        yearlyReports[year] = { months: {}, totalSpent: 0, totalIncome: 0, totalSavings: 0 };
+      }
+      const data = allFinancialData[key];
+      const monthlyNeeds = (data.needs || []).reduce((sum, item) => sum + parseAmount(item.amount), 0);
+      const monthlyWants = (data.wants || []).reduce((sum, item) => sum + parseAmount(item.amount), 0);
+      const monthlySpent = monthlyNeeds + monthlyWants;
+      const monthlyIncomeVal = parseAmount(data.monthlyIncome);
+      const monthlySavingsVal = parseAmount(data.savings);
 
-        yearlyReports[year].months[month] = {
-            income: monthlyIncomeVal,
-            savings: monthlySavingsVal,
-            spent: monthlySpent,
-            remainingSavings: monthlySavingsVal - Math.max(0, monthlySpent - (monthlyIncomeVal - monthlySavingsVal)),
-            // Pass the detailed expenses for analysis
-            expenses: [...(data.needs || []), ...(data.wants || [])]
-        };
-        yearlyReports[year].totalSpent += monthlySpent;
-        yearlyReports[year].totalIncome += monthlyIncomeVal;
-        yearlyReports[year].totalSavings += monthlySavingsVal;
+      yearlyReports[year].months[month] = {
+        income: monthlyIncomeVal,
+        savings: monthlySavingsVal,
+        spent: monthlySpent,
+        remainingSavings: monthlySavingsVal - Math.max(0, monthlySpent - (monthlyIncomeVal - monthlySavingsVal)),
+        // Pass the detailed expenses for analysis
+        expenses: [...(data.needs || []), ...(data.wants || [])]
+      };
+      yearlyReports[year].totalSpent += monthlySpent;
+      yearlyReports[year].totalIncome += monthlyIncomeVal;
+      yearlyReports[year].totalSavings += monthlySavingsVal;
     });
 
     return (
-        <View style={styles.fullScreenSectionContainer}>
-            <TouchableOpacity onPress={() => setShowReports(false)} style={styles.backButton}>
-                <Ionicons name="arrow-back" size={30} color="#702c51" />
-            </TouchableOpacity>
-            <Text style={styles.sectionHeader}>Reports</Text>
-            <ScrollView>
-                {Object.keys(yearlyReports).sort((a, b) => b - a).map(year => (
-                    <View key={year} style={styles.reportYearContainer}>
-                        <Text style={styles.reportYearHeader}>{year}</Text>
-                        <Text style={styles.reportSummaryText}>Yearly Income: ${yearlyReports[year].totalIncome.toFixed(2)}</Text>
-                        <Text style={styles.reportSummaryText}>Yearly Savings: ${yearlyReports[year].totalSavings.toFixed(2)}</Text>
-                        <Text style={styles.reportSummaryText}>Yearly Spent: ${yearlyReports[year].totalSpent.toFixed(2)}</Text>
+      <View style={styles.fullScreenSectionContainer}>
+        <TouchableOpacity onPress={() => setShowReports(false)} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={30} color="#702c51" />
+        </TouchableOpacity>
+        <Text style={styles.sectionHeader}>Reports</Text>
+        <ScrollView>
+          {Object.keys(yearlyReports).sort((a, b) => b - a).map(year => (
+            <View key={year} style={styles.reportYearContainer}>
+              <Text style={styles.reportYearHeader}>{year}</Text>
+              <Text style={styles.reportSummaryText}>Yearly Income: ${yearlyReports[year].totalIncome.toFixed(2)}</Text>
+              <Text style={styles.reportSummaryText}>Yearly Savings: ${yearlyReports[year].totalSavings.toFixed(2)}</Text>
+              <Text style={styles.reportSummaryText}>Yearly Spent: ${yearlyReports[year].totalSpent.toFixed(2)}</Text>
 
-                        {Object.keys(yearlyReports[year].months).sort((a, b) => b - a).map(month => {
-                            const monthData = yearlyReports[year].months[month];
-                            const validExpenses = monthData.expenses.filter(item => item.element && parseAmount(item.amount) > 0);
+              {Object.keys(yearlyReports[year].months).sort((a, b) => b - a).map(month => {
+                const monthData = yearlyReports[year].months[month];
+                const validExpenses = monthData.expenses.filter(item => item.element && parseAmount(item.amount) > 0);
 
-                            let mostSpentText = null;
-                            let leastSpentText = null;
+                let mostSpentText = null;
+                let leastSpentText = null;
 
-                            if (validExpenses.length > 0) {
-                                const sortedExpenses = [...validExpenses].sort((a, b) => parseAmount(b.amount) - parseAmount(a.amount));
-                                const mostSpentItem = sortedExpenses[0];
-                                const leastSpentItem = sortedExpenses[sortedExpenses.length - 1];
+                if (validExpenses.length > 0) {
+                  const sortedExpenses = [...validExpenses].sort((a, b) => parseAmount(b.amount) - parseAmount(a.amount));
+                  const mostSpentItem = sortedExpenses[0];
+                  const leastSpentItem = sortedExpenses[sortedExpenses.length - 1];
 
-                                mostSpentText = `Most spent on: ${mostSpentItem.element} ($${parseAmount(mostSpentItem.amount).toFixed(2)})`;
+                  mostSpentText = `Most spent on: ${mostSpentItem.element} ($${parseAmount(mostSpentItem.amount).toFixed(2)})`;
 
-                                if (sortedExpenses.length > 1 && parseAmount(mostSpentItem.amount) !== parseAmount(leastSpentItem.amount)) {
-                                    leastSpentText = `Least spent on: ${leastSpentItem.element} ($${parseAmount(leastSpentItem.amount).toFixed(2)})`;
-                                }
-                            }
+                  if (sortedExpenses.length > 1 && parseAmount(mostSpentItem.amount) !== parseAmount(leastSpentItem.amount)) {
+                    leastSpentText = `Least spent on: ${leastSpentItem.element} ($${parseAmount(leastSpentItem.amount).toFixed(2)})`;
+                  }
+                }
 
-                            return (
-                                <View key={month} style={styles.reportMonthContainer}>
-                                    <Text style={styles.reportMonthHeader}>{new Date(year, month - 1).toLocaleString('default', { month: 'long' })}</Text>
-                                    <Text>Monthly Income: ${monthData.income.toFixed(2)}</Text>
-                                    <Text>Initial Savings: ${monthData.savings.toFixed(2)}</Text>
-                                    <Text>Total Spent: ${monthData.spent.toFixed(2)}</Text>
-                                    {/* New spending analysis text */}
-                                    {mostSpentText && <Text style={styles.reportHighlightText}>{mostSpentText}</Text>}
-                                    {leastSpentText && <Text style={styles.reportHighlightText}>{leastSpentText}</Text>}
-                                    <Text>Remaining Savings: ${monthData.remainingSavings.toFixed(2)}</Text>
-                                </View>
-                            );
-                        })}
-                    </View>
-                ))}
-            </ScrollView>
-        </View>
+                return (
+                  <View key={month} style={styles.reportMonthContainer}>
+                    <Text style={styles.reportMonthHeader}>{new Date(year, month - 1).toLocaleString('default', { month: 'long' })}</Text>
+                    <Text>Monthly Income: ${monthData.income.toFixed(2)}</Text>
+                    <Text>Initial Savings: ${monthData.savings.toFixed(2)}</Text>
+                    <Text>Total Spent: ${monthData.spent.toFixed(2)}</Text>
+                    {/* New spending analysis text */}
+                    {mostSpentText && <Text style={styles.reportHighlightText}>{mostSpentText}</Text>}
+                    {leastSpentText && <Text style={styles.reportHighlightText}>{leastSpentText}</Text>}
+                    <Text>Remaining Savings: ${monthData.remainingSavings.toFixed(2)}</Text>
+                  </View>
+                );
+              })}
+            </View>
+          ))}
+        </ScrollView>
+      </View>
     );
-};
+  };
 
   return (
     <ImageBackground
@@ -353,8 +374,33 @@ const WomenScreen = ({ route }) => {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
       >
+
         <ScrollView contentContainerStyle={styles.container}>
-          <Text style={styles.welcomeText}>Welcome, {name}</Text>
+
+          <View style={styles.welcomeContainer}>
+            <Text style={styles.welcomeText}>Welcome, {name}</Text>
+            <TouchableOpacity
+              onPress={async () => {
+                Alert.alert(
+                  "Logout",
+                  "Are you sure you want to logout?",
+                  [
+                    { text: "Cancel", style: "cancel" },
+                    {
+                      text: "Logout", onPress: async () => {
+                        // clear user data
+                        navigation.navigate('Login'); 
+                      }
+                    }
+                  ]
+                );
+              }}
+              style={styles.logoutIconButton}
+            >
+              <Text style={styles.logoutText}>Logout</Text>
+            </TouchableOpacity>
+          </View>
+
 
           {showReports ? (
             renderReports()
@@ -446,8 +492,8 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   welcomeText: {
-    fontSize: 34, marginTop: 20, fontWeight: 'bold', color: '#702c51', textAlign: 'center',
-    marginBottom: 25, textShadowColor: 'rgba(0,0,0,0.4)', textShadowOffset: { width: 1, height: 2 },
+    fontSize: 30, marginTop: 10, fontWeight: 'bold', color: '#702c51', textAlign: 'center', width: 200,
+    marginBottom: 10, textShadowColor: 'rgba(0,0,0,0.4)', textShadowOffset: { width: 1, height: 2 },
     textShadowRadius: 4, letterSpacing: 1,
   },
   incomeInputContainer: {
@@ -554,6 +600,10 @@ const styles = StyleSheet.create({
   sectionSummaryAmount: {
     fontWeight: 'bold',
     color: '#702c51',
+  }, logoutText: {
+    color: '#702c51',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
   sectionContentScroll: {
     flex: 1,
@@ -596,18 +646,18 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   reportsButton: {
-  backgroundColor: '#d8cad2ff', // change to any color you like
-  paddingVertical: 10,
-  paddingHorizontal: 15,
-  borderRadius: 50,
-  alignItems: 'center', // centers the text
-  marginBottom:20
-},
+    backgroundColor: '#d8cad2ff', // change to any color you like
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    borderRadius: 50,
+    alignItems: 'center', // centers the text
+    marginBottom: 20
+  },
   reportsLink: {
     fontSize: 18,
     color: '#702c51',
     fontWeight: '600',
-   
+
 
   },
   reportYearContainer: {
@@ -648,7 +698,24 @@ const styles = StyleSheet.create({
     marginTop: 4,
     marginBottom: 4,
     fontStyle: 'italic',
-  }
+  },
+  welcomeContainer: {
+    flexDirection: 'row',
+    width: '100%',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 20,
+    marginBottom: 25,
+    paddingHorizontal: 5,
+  },
+  logoutIconButton: {
+    padding: 15,
+    borderRadius: 30,
+    backgroundColor: '#d8cad2ff', // optional for visibility
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
 });
 
 export default WomenScreen;
