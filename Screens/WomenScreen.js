@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ImageBackground, TextInput, ScrollView, Image, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ImageBackground, TextInput, ScrollView, Image, TouchableOpacity, Alert } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
-const WomenScreen = ({ route }) => {
+const WomenScreen = ({ route, navigation }) => {
   const { name } = route.params;
 
   const [selectedSection, setSelectedSection] = useState(null);
@@ -99,8 +99,36 @@ const WomenScreen = ({ route }) => {
       style={styles.background} resizeMode="cover"
     >
       <View style={styles.overlay}>
-        <ScrollView contentContainerStyle={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
           <Text style={styles.welcomeText}>Welcome, {name}</Text>
+          <TouchableOpacity 
+            style={styles.logoutButton} 
+            onPress={() => {
+              Alert.alert(
+                'Logout',
+                'Are you sure you want to logout?',
+                [
+                  {
+                    text: 'Cancel',
+                    style: 'cancel',
+                  },
+                  {
+                    text: 'Logout',
+                    style: 'destructive',
+                    onPress: () => {
+                      navigation.replace('Login');
+                    },
+                  },
+                ],
+              );
+            }}
+          >
+            <Text style={styles.logoutText}>Logout</Text>
+          </TouchableOpacity>
+        </View>
+
+        <ScrollView contentContainerStyle={styles.container}>
 
           {/* Income */}
           <View style={styles.incomeContainer}>
@@ -171,11 +199,38 @@ const WomenScreen = ({ route }) => {
 const styles = StyleSheet.create({
   background: { flex: 1, width: '100%', height: '100%' },
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.3)' },
-  container: { paddingVertical: 40, paddingHorizontal: 25, alignItems: 'center' },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 25,
+    paddingTop: 50,
+    paddingBottom: 10,
+  },
+  container: { paddingVertical: 20, paddingHorizontal: 25, alignItems: 'center' },
   welcomeText: {
-    fontSize: 34, marginTop:20, fontWeight: 'bold', color: '#FFEEF2', textAlign: 'center',
-    marginBottom: 25, textShadowColor: 'rgba(0,0,0,0.4)', textShadowOffset: { width: 1, height: 2 },
-    textShadowRadius: 4, letterSpacing: 1,
+    fontSize: 28, fontWeight: 'bold', color: '#FFEEF2', 
+    textShadowColor: 'rgba(0,0,0,0.4)', textShadowOffset: { width: 1, height: 2 },
+    textShadowRadius: 4, letterSpacing: 1, flex: 1,
+  },
+  logoutButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 25,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  logoutText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
   },
   incomeContainer: { width: '100%', marginBottom: 35 },
   input: { backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: 14, paddingVertical: 15, paddingHorizontal: 20, fontSize: 17, marginBottom: 15, color: '#333', elevation: 3 },

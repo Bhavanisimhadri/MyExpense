@@ -8,8 +8,11 @@ import {
   TextInput, 
   Alert,
   Modal,
-  FlatList
+  FlatList,
+  ImageBackground,
+  Image
 } from 'react-native';
+import { withSafeAreaInsets } from 'react-native-safe-area-context';
 import SQLite from 'react-native-sqlite-storage';
 
 const db = SQLite.openDatabase({ name: 'ExpenseDB.db', location: 'default' });
@@ -29,6 +32,7 @@ const StudentScreen = ({ route, navigation }) => {
   const [expenseAmount, setExpenseAmount] = useState('');
   const [expenseDescription, setExpenseDescription] = useState('');
   const [selectedPeriod, setSelectedPeriod] = useState('1 Month');
+  const [selectedSection, setSelectedSection] = useState(null);
 
   // Student-specific expense categories
   const studentCategories = [
@@ -48,6 +52,38 @@ const StudentScreen = ({ route, navigation }) => {
     { name: '3 Months', months: 3, icon: '📊' },
     { name: '6 Months', months: 6, icon: '📈' },
     { name: '1 Year', months: 12, icon: '🗓️' }
+  ];
+
+  // Student sections like Women screen
+  const studentSections = [
+    { 
+      id: 'expenses', 
+      name: 'Expenses', 
+      icon: '💰', 
+      color: '#4CAF50',
+      description: 'Track your daily expenses'
+    },
+    { 
+      id: 'budget', 
+      name: 'Budget Plan', 
+      icon: '📊', 
+      color: '#2196F3',
+      description: 'Set and manage budgets'
+    },
+    { 
+      id: 'goals', 
+      name: 'Financial Goals', 
+      icon: '🎯', 
+      color: '#FF9800',
+      description: 'Set savings and financial goals'
+    },
+    { 
+      id: 'analysis', 
+      name: 'Expense Analysis', 
+      icon: '📈', 
+      color: '#9C27B0',
+      description: 'View spending patterns'
+    }
   ];
 
   useEffect(() => {
@@ -219,46 +255,36 @@ const StudentScreen = ({ route, navigation }) => {
     </View>
   );
 
-  return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerTop}>
-          <View>
-            <Text style={styles.title}>Student Expense Tracker</Text>
-            <Text style={styles.subtitle}>Welcome, {name}</Text>
-          </View>
-          <TouchableOpacity 
-            style={styles.logoutButton} 
-            onPress={() => {
-              Alert.alert(
-                'Logout',
-                'Are you sure you want to logout?',
-                [
-                  {
-                    text: 'Cancel',
-                    style: 'cancel',
-                  },
-                  {
-                    text: 'Logout',
-                    style: 'destructive',
-                    onPress: () => {
-                      // Navigate back to login screen
-                      navigation.replace('Login');
-                    },
-                  },
-                ],
-              );
-            }}
-          >
-            <Text style={styles.logoutText}>Logout</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+  const renderSectionCards = () => (
+    <View style={styles.sectionsContainer}>
+      {studentSections.map((section, index) => (
+        <TouchableOpacity 
+          key={index} 
+          style={[styles.sectionCard, { borderColor: section.color }]}
+          onPress={() => setSelectedSection(section.id)}
+        >
+          <Text style={styles.sectionIcon}>{section.icon}</Text>
+          <Text style={styles.sectionName}>{section.name}</Text>
+          <Text style={styles.sectionDescription}>{section.description}</Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
 
+  const renderExpenseSection = () => (
+    <View style={styles.sectionContainer}>
+      <TouchableOpacity 
+        style={styles.backButton} 
+        onPress={() => setSelectedSection(null)}
+      >
+        <Text style={styles.backButtonText}>← Back to Sections</Text>
+      </TouchableOpacity>
+      
+      <Text style={styles.sectionTitle}>Expense Tracker</Text>
+      
       {/* Period Selection */}
-      <View style={styles.periodSection}>
-        <Text style={styles.periodTitle}>Tracking Period</Text>
+      <View style={styles.periodContainer}>
+        <Text style={styles.periodLabel}>Tracking Period:</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.periodScroll}>
           {timePeriods.map((period, index) => (
             <TouchableOpacity
@@ -303,20 +329,18 @@ const StudentScreen = ({ route, navigation }) => {
         )}
       </View>
 
-      {/* Action Buttons */}
-      <View style={styles.actionButtons}>
-        <TouchableOpacity 
-          style={styles.addExpenseBtn} 
-          onPress={() => setIsModalVisible(true)}
-        >
-          <Text style={styles.addExpenseBtnText}>+ Add Expense</Text>
-        </TouchableOpacity>
-      </View>
+      {/* Add Expense Button */}
+      <TouchableOpacity 
+        style={styles.addExpenseBtn} 
+        onPress={() => setIsModalVisible(true)}
+      >
+        <Text style={styles.addExpenseBtnText}>+ Add Expense</Text>
+      </TouchableOpacity>
 
       {/* Recent Expenses */}
-      <View style={styles.expensesSection}>
+      <View style={styles.expensesListContainer}>
         <View style={styles.expensesHeader}>
-          <Text style={styles.sectionTitle}>
+          <Text style={styles.expensesTitle}>
             {selectedPeriod} Expenses ({expenses.length})
           </Text>
           <Text style={styles.totalAmount}>₹{totalSpent.toFixed(2)}</Text>
@@ -336,6 +360,67 @@ const StudentScreen = ({ route, navigation }) => {
             </Text>
           </View>
         )}
+      </View>
+    </View>
+  );
+
+  return (
+    <ImageBackground 
+      source={require('../assets/studentsback.jpg')} 
+      style={styles.background} 
+      resizeMode="cover"
+    >
+      <View style={styles.overlay}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.welcomeText}>Welcome, {name}</Text>
+          <TouchableOpacity 
+            style={styles.logoutButton} 
+            onPress={() => {
+              Alert.alert(
+                'Logout',
+                'Are you sure you want to logout?',
+                [
+                  {
+                    text: 'Cancel',
+                    style: 'cancel',
+                  },
+                  {
+                    text: 'Logout',
+                    style: 'destructive',
+                    onPress: () => {
+                      navigation.replace('Login');
+                    },
+                  },
+                ],
+              );
+            }}
+          >
+            <Text style={styles.logoutText}>Logout</Text>
+          </TouchableOpacity>
+        </View>
+
+        <ScrollView contentContainerStyle={styles.scrollContainer}>
+          {/* Main Content */}
+          {!selectedSection ? (
+            renderSectionCards()
+          ) : selectedSection === 'expenses' ? (
+            renderExpenseSection()
+          ) : (
+            <View style={styles.sectionContainer}>
+              <TouchableOpacity 
+                style={styles.backButton} 
+                onPress={() => setSelectedSection(null)}
+              >
+                <Text style={styles.backButtonText}>← Back to Sections</Text>
+              </TouchableOpacity>
+              <Text style={styles.sectionTitle}>Coming Soon!</Text>
+              <Text style={styles.comingSoonText}>
+                This feature will be available in the next update.
+              </Text>
+            </View>
+          )}
+        </ScrollView>
       </View>
 
       {/* Add Expense Modal */}
@@ -464,36 +549,154 @@ const StudentScreen = ({ route, navigation }) => {
           </View>
         </View>
       </Modal>
-    </View>
+    </ImageBackground>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { 
+  background: { 
     flex: 1, 
-    backgroundColor: '#F5F7FA' 
+    width: '100%', 
+    height: '100%' 
+  },
+  overlay: { 
+    flex: 1, 
+    backgroundColor: 'rgba(0,0,0,0.3)' 
   },
   header: {
-    backgroundColor: '#4A90E2',
     paddingHorizontal: 20,
     paddingTop: 50,
     paddingBottom: 20,
-  },
-  headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    minHeight: 60,
+    alignItems: 'center',
   },
-  title: { 
-    fontSize: 24, 
-    fontWeight: 'bold', 
+  welcomeText: {
+    fontSize: 28,
+    fontWeight: 'bold',
     color: '#fff',
-    marginBottom: 5 
+    textShadowColor: 'rgba(0,0,0,0.5)',
+    textShadowOffset: { width: 1, height: 2 },
+    textShadowRadius: 4,
+    letterSpacing: 1,
   },
-  subtitle: { 
-    fontSize: 16, 
-    color: '#E3F2FD' 
+  scrollContainer: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+  },
+  sectionsContainer: {
+    marginTop: 20,
+    marginBottom: 20,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  sectionCard: {
+    width: '48%',
+    backgroundColor: '#fff',
+    borderRadius: 18,
+    padding: 20,
+    marginBottom: 15,
+    alignItems: 'center',
+    borderWidth: 2,
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 5,
+    minHeight: 140,
+    justifyContent: 'center',
+  },
+  sectionIcon: {
+    fontSize: 36,
+    marginBottom: 10,
+  },
+  sectionName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 6,
+    textAlign: 'center',
+  },
+  sectionDescription: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 16,
+  },
+  sectionContainer: {
+    marginTop: 20,
+  },
+  backButton: {
+    marginBottom: 15,
+  },
+  backButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    textShadowColor: 'rgba(0,0,0,0.5)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+  },
+  sectionTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 20,
+    textShadowColor: 'rgba(0,0,0,0.5)',
+    textShadowOffset: { width: 1, height: 2 },
+    textShadowRadius: 4,
+  },
+  comingSoonText: {
+    fontSize: 16,
+    color: '#fff',
+    textAlign: 'center',
+    marginTop: 20,
+    fontStyle: 'italic',
+  },
+  periodContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 15,
+    marginBottom: 15,
+  },
+  periodLabel: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 10,
+  },
+  periodScroll: {
+    marginBottom: 5,
+  },
+  periodButton: {
+    backgroundColor: '#f0f0f0',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 15,
+    marginRight: 10,
+    alignItems: 'center',
+    minWidth: 70,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  selectedPeriodButton: {
+    backgroundColor: '#4A90E2',
+    borderColor: '#4A90E2',
+  },
+  periodIcon: {
+    fontSize: 14,
+    marginBottom: 2,
+  },
+  periodButtonText: {
+    fontSize: 10,
+    color: '#333',
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  selectedPeriodText: {
+    color: '#fff',
+    fontWeight: 'bold',
   },
   logoutButton: {
     backgroundColor: 'rgba(255, 255, 255, 0.15)',
@@ -517,10 +720,10 @@ const styles = StyleSheet.create({
   },
   budgetCard: {
     backgroundColor: '#fff',
-    margin: 20,
     padding: 20,
     borderRadius: 12,
-    elevation: 3,
+    marginBottom: 15,
+    elevation: 5,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -563,44 +766,44 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
   },
-  actionButtons: {
-    paddingHorizontal: 20,
-    marginBottom: 20,
-  },
   addExpenseBtn: {
     backgroundColor: '#4CAF50',
     paddingVertical: 15,
-    borderRadius: 8,
+    borderRadius: 12,
     alignItems: 'center',
+    marginBottom: 15,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
   },
   addExpenseBtnText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
   },
-  expensesSection: {
-    flex: 1,
-    paddingHorizontal: 20,
+  expensesListContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 15,
+    maxHeight: 400,
   },
-  sectionTitle: {
-    fontSize: 20,
+  expensesTitle: {
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
-    marginBottom: 15,
   },
   expensesList: {
     flex: 1,
   },
   expenseItem: {
-    backgroundColor: '#fff',
-    padding: 15,
-    marginBottom: 10,
+    backgroundColor: '#f8f9fa',
+    padding: 12,
+    marginBottom: 8,
     borderRadius: 8,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    borderLeftWidth: 3,
+    borderLeftColor: '#4A90E2',
   },
   expenseHeader: {
     flexDirection: 'row',
