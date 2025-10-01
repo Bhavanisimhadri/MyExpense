@@ -119,7 +119,8 @@ const WomenScreen = ({ route, navigation }) => {
       source={require('../assets/womenbackg.jpg')} 
       style={styles.background} resizeMode="cover"
     >
-      <View style={styles.overlay}>
+      <KeyboardAvoidingView style={styles.keyboardAvoidingContainer} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <View style={styles.overlay}>
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.welcomeText}>Welcome, {name}</Text>
@@ -171,7 +172,9 @@ const WomenScreen = ({ route, navigation }) => {
             />
           </View>
 
-              <View style={styles.sectionsContainer}>
+          {/* Conditional Rendering: Cards or Section */}
+          {!selectedSection ? (
+            <View style={styles.sectionsContainer}>
                 <TouchableOpacity style={styles.sectionCard} onPress={() => setSelectedSection('needs')}>
                   <View style={styles.sectionImageWrapper}><Image source={require('../assets/needs.jpg')} style={styles.sectionImage} /></View>
                   <Text style={styles.sectionText}>Needs</Text>
@@ -189,7 +192,6 @@ const WomenScreen = ({ route, navigation }) => {
                   <Text style={styles.sectionText}>Bucket List</Text>
                 </TouchableOpacity>
               </View>
-            </>
           ) : (
             <View style={styles.fullScreenSectionContainer}> 
               <TouchableOpacity onPress={() => setSelectedSection(null)}  style={styles.backButton}>
@@ -202,10 +204,10 @@ const WomenScreen = ({ route, navigation }) => {
               {/* Corrected: Income and Savings display inside Text components */}
               <View style={styles.sectionSummaryDisplay}>
                 <Text style={styles.sectionSummaryText}>
-                  Income: <Text style={styles.sectionSummaryAmount}>${monthlyIncome || '0'}</Text>
+                  Income: <Text style={styles.sectionSummaryAmount}>{monthlyIncome || '0'}</Text>
                 </Text>
                 <Text style={styles.sectionSummaryText}>
-                  Savings: <Text style={styles.sectionSummaryAmount}>${savings || '0'}</Text>
+                  Savings: <Text style={styles.sectionSummaryAmount}>{savings || '0'}</Text>
                 </Text>
               </View>
 
@@ -217,6 +219,7 @@ const WomenScreen = ({ route, navigation }) => {
           )}
 
         </ScrollView>
+        </View>
       </KeyboardAvoidingView>
     </ImageBackground>
   );
@@ -267,7 +270,41 @@ const styles = StyleSheet.create({
   sectionImage: { width: '100%', height: '100%' },
   sectionText: { fontSize: 18, fontWeight: '600', color: '#702c51' },
   sectionContainer: { width: '100%', marginBottom: 35 },
-  sectionHeader: { fontSize: 22, fontWeight: '700', color: '#FFEEF2', marginBottom: 10 },
+  fullScreenSectionContainer: { 
+    width: '100%', 
+    flex: 1,
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    borderRadius: 18,
+    padding: 20,
+    marginBottom: 20
+  },
+  backButton: {
+    marginBottom: 20,
+    alignSelf: 'flex-start'
+  },
+  sectionHeader: { fontSize: 22, fontWeight: '700', color: '#702c51', marginBottom: 10 },
+  sectionContentScroll: {
+    maxHeight: 300,
+    width: '100%'
+  },
+  sectionSummaryDisplay: {
+    backgroundColor: 'rgba(112, 44, 81, 0.1)',
+    borderRadius: 10,
+    padding: 15,
+    marginBottom: 20,
+    width: '100%'
+  },
+  sectionSummaryText: {
+    fontSize: 16,
+    color: '#702c51',
+    fontWeight: '600',
+    marginBottom: 5
+  },
+  sectionSummaryAmount: {
+    fontSize: 16,
+    color: '#28a745',
+    fontWeight: 'bold'
+  },
   rowContainer: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
   smallInput: { flex: 1, backgroundColor: '#fff', borderRadius: 12, padding: 10, marginRight: 8 },
   largeInput: { flex: 1, backgroundColor: '#fff', borderRadius: 12, padding: 10, marginRight: 8 },
