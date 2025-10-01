@@ -18,29 +18,26 @@ const LoginScreen = ({ navigation }) => {
 
   // Create Users table if not exists (drop old table in dev)
  useEffect(() => {
-    db.transaction(tx => {
-      tx.executeSql(
-        `CREATE TABLE IF NOT EXISTS Users (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          name TEXT,
-          mobile TEXT UNIQUE,
-          category TEXT
-        );`,
-        [],
-        () => console.log('Users table ready'),
-        err => console.log('Table creation error:', err)
-      );
-    });
+  db.transaction(tx => {
+    // Create table if not exists
+    tx.executeSql(
+      `CREATE TABLE IF NOT EXISTS Users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT,
+        mobile TEXT UNIQUE
+      );`
+    );
 
-    const loadRemembered = async () => {
-      const savedMobile = await AsyncStorage.getItem('rememberedMobile');
-      if (savedMobile) {
-        setMobile(savedMobile);
-        setRememberMe(true);
-      }
-    };
-    loadRemembered();
-  }, []);
+    // Ensure category column exists
+    tx.executeSql(
+      `ALTER TABLE Users ADD COLUMN category TEXT;`,
+      [],
+      () => console.log("Category column added"),
+      (err) => console.log("Alter error (maybe already exists):", err)
+    );
+  });
+}, []);
+
 
   const handleContinue = () => {
     if (mobile.length !== 10) return Alert.alert('Error', 'Enter a valid 10-digit number');

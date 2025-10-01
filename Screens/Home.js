@@ -18,12 +18,38 @@ const HomeScreen = ({ navigation, route }) => {
 
   const { mobile } = route.params || {}; // 👈 safe access
 
-  const handleCategoryPress = (category) => {
-    console.log("Category pressed:", category.name, "Mobile:", mobile);
+ const handleCategoryPress = (category) => {
+  console.log("Category pressed:", category.name, "Mobile:", mobile);
 
-    // 🚨 Temporarily bypass DB to test navigation
-    navigation.navigate(category.screen, { mobile });
-  };
+  db.transaction(
+    (tx) => {
+      tx.executeSql(
+        'UPDATE Users SET category = ? WHERE mobile = ?',
+        [category.name, mobile],
+        (_, result) => {
+          console.log("✅ Category saved:", category.name, "Rows affected:", result.rowsAffected);
+
+          if (result.rowsAffected > 0) {
+            console.log("➡️ Navigating to Login");
+            navigation.replace(category.screen, { mobile });
+          } else {
+            console.log("⚠️ No row updated! Mobile may not exist:", mobile);
+            Alert.alert("Error", "User not found in database.");
+          }
+        }
+      );
+    },
+    (err) => {
+      console.log("❌ Transaction error:", err);
+    },
+    () => {
+      console.log("✅ Transaction completed");
+    }
+  );
+};
+
+
+
 
 
   return (
@@ -43,7 +69,7 @@ const HomeScreen = ({ navigation, route }) => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F7E3B0', alignItems: 'center', paddingTop: 40 },
-  title: { fontSize: 24, fontWeight: 'bold', color: '#D35225', marginBottom: 20 },
+  title: { fontSize: 24, fontWeight: 'bold', color: '#D35225', marginBottom:80 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', width: '90%' },
   card: { width: '45%', backgroundColor: '#fff', borderRadius: 10, alignItems: 'center', marginBottom: 20, padding: 10, elevation: 3 },
   image: { width: 100, height: 100, marginBottom: 10, resizeMode: 'contain' },

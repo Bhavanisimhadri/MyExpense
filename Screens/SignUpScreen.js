@@ -10,17 +10,26 @@ const SignUpScreen = ({ navigation }) => {
 
   // Ensure Users table exists before using it
  useEffect(() => {
-    db.transaction(tx => {
-      tx.executeSql(
-        `CREATE TABLE IF NOT EXISTS Users (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          name TEXT,
-          mobile TEXT UNIQUE,
-          category TEXT
-        );`
-      );
-    });
-  }, []);
+  db.transaction(tx => {
+    // Create table if not exists
+    tx.executeSql(
+      `CREATE TABLE IF NOT EXISTS Users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT,
+        mobile TEXT UNIQUE
+      );`
+    );
+
+    // Ensure category column exists
+    tx.executeSql(
+      `ALTER TABLE Users ADD COLUMN category TEXT;`,
+      [],
+      () => console.log("Category column added"),
+      (err) => console.log("Alter error (maybe already exists):", err)
+    );
+  });
+}, []);
+
 
   const handleSignUp = () => {
     const trimmedName = name.trim();
