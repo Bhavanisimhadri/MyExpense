@@ -11,6 +11,8 @@ import StudentScreen from './Screens/StudentScreen';
 import ElderScreen from './Screens/ElderScreen';
 import PartnersScreen from './Screens/PartnersScreen';
 import FriendsScreen from './Screens/FriendsScreen';
+import AdminLoginScreen from './Screens/AdminLogin';
+import AdminPanelScreen from './Screens/AdminPanel';
 const Stack = createNativeStackNavigator();
 
 export default function App() {
@@ -27,6 +29,8 @@ export default function App() {
         <Stack.Screen name="ElderScreen" component={ElderScreen} options={{ headerShown: false }} />
         <Stack.Screen name="PartnersScreen" component={PartnersScreen} options={{ headerShown: false }} />
         <Stack.Screen name="FriendsScreen" component={FriendsScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="AdminLogin" component={AdminLoginScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="AdminPanel" component={AdminPanelScreen} options={{ headerShown: false }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

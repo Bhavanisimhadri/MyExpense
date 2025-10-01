@@ -70,7 +70,20 @@ const LoginScreen = ({ navigation }) => {
               navigation.replace('Home', { mobile, name: user.name });
             }
           } else {
-            navigation.navigate('SignUp', { mobile });
+            Alert.alert(
+              'New User',
+              'Mobile number not found. Please create an account first.',
+              [
+                {
+                  text: 'Cancel',
+                  style: 'cancel',
+                },
+                {
+                  text: 'Create Account',
+                  onPress: () => navigation.navigate('SignUp', { mobile }),
+                },
+              ]
+            );
           }
         },
         err => console.log('Select error:', err)
@@ -80,6 +93,14 @@ const LoginScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
+      {/* Admin Button - Top Right */}
+      <TouchableOpacity 
+        style={styles.adminButton}
+        onPress={() => navigation.navigate('AdminLogin')}
+      >
+        <Text style={styles.adminButtonText}>⚙️</Text>
+      </TouchableOpacity>
+      
       <Text style={styles.title}>Welcome Back</Text>
       <Text style={styles.label}>Enter Mobile Number</Text>
 
@@ -198,7 +219,23 @@ const styles = StyleSheet.create({
   signupLink: {
     color: '#D35225',
     fontWeight: 'bold',
-  }
+  },
+  adminButton: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    width: 40,
+    height: 40,
+    backgroundColor: 'rgba(213, 82, 37, 0.1)',
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(213, 82, 37, 0.2)',
+  },
+  adminButtonText: {
+    fontSize: 18,
+  },
 });
 
 export default LoginScreen;
