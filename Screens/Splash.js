@@ -3,7 +3,7 @@ import { View, Text, ActivityIndicator, StyleSheet, Image } from 'react-native';
 
 const SplashScreen = ({ navigation }) => {
   useEffect(() => {
-    const timer = setTimeout(() => navigation.replace('Login'), 2000);
+    const timer = setTimeout(() => navigation.replace('SignUp'), 2000);
     return () => clearTimeout(timer);
   }, []);
 
@@ -11,7 +11,6 @@ const SplashScreen = ({ navigation }) => {
     <View style={styles.container}>
       <Text style={styles.title}>My Expense Tracker</Text>
 
-      {/* Image with Loader in Center */}
       <View style={styles.imageWrapper}>
         <Image 
           source={require('../assets/Background.png')}
@@ -31,32 +30,37 @@ const styles = StyleSheet.create({
     flex: 1, 
     justifyContent: 'center', 
     alignItems: 'center',
-    backgroundColor: '#F7E3B0'
+    backgroundColor: '#FFF8EC', // matching Home/Login/SignUp
+    paddingHorizontal: 20,
+  },
+  title: { 
+    fontSize: 32, 
+    fontWeight: 'bold', 
+    color: '#D35225',
+    letterSpacing: 1.2,
+    marginBottom: 20,
+    textAlign: 'center',
   },
   imageWrapper: {
-    position: 'relative',
     justifyContent: 'center',
     alignItems: 'center',
-    marginVertical: 20,
+    marginVertical: 25,
+    width: 280,
+    height: 280,
   },
   logo: {
-    width: 250,
-    height: 250,
+    width: '100%',
+    height: '100%',
   },
   loader: {
     position: 'absolute',
   },
-  title: { 
-    fontSize: 30, 
-    fontWeight: 'bold', 
-    color: '#D35225',
-    letterSpacing: 1,
-  },
   subtitle: {
-    marginTop: 15,
+    marginTop: 20,
     fontSize: 16,
-    color: '#5A2E18',
-    fontStyle: 'italic'
+    color: '#4A2C2A',
+    fontStyle: 'italic',
+    textAlign: 'center',
   }
 });
 

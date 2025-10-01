@@ -109,72 +109,87 @@ const LoginScreen = ({ navigation }) => {
   );
 };
 
+
 const styles = StyleSheet.create({
   container: { 
     flex: 1, 
     justifyContent: 'center', 
     alignItems: 'center', 
     padding: 20,
-    backgroundColor: '#F7E3B0'
+    backgroundColor: '#FFF8EC',
   },
   title: {
-    fontSize: 28,
+    fontSize: 30,
     fontWeight: 'bold',
     color: '#D35225',
-    marginBottom: 20,
+    marginBottom: 5,
+    letterSpacing: 1,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#6A4E42',
+    marginBottom: 30,
   },
   label: { 
     fontSize: 18, 
-    marginBottom: 10, 
-    color: '#5A2E18' 
+    marginBottom: 8, 
+    color: '#4A2C2A',
+    alignSelf: 'flex-start',
+    marginLeft: 25,
   },
   input: { 
     borderWidth: 1, 
-    borderColor: '#ccc', 
-    padding: 12, 
+    borderColor: '#ddd', 
+    padding: 14, 
     marginBottom: 20, 
     width: '85%', 
-    borderRadius: 8, 
+    borderRadius: 12, 
     backgroundColor: '#fff',
     fontSize: 16,
+    elevation: 2,
   },
   rememberRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20
+    marginBottom: 20,
+    alignSelf: 'flex-start',
+    marginLeft: 25,
   },
   checkbox: {
-    width: 20, 
-    height: 20,
-    borderWidth: 1, 
+    width: 22, 
+    height: 22,
+    borderWidth: 1.5, 
     borderColor: '#5A2E18',
     marginRight: 10,
-    borderRadius: 4,
+    borderRadius: 6,
+    backgroundColor: '#fff',
   },
   checkboxChecked: {
     backgroundColor: '#2C9C94',
+    borderColor: '#2C9C94',
   },
   rememberText: {
-    color: '#5A2E18',
+    color: '#4A2C2A',
     fontSize: 16,
   },
   button: {
     backgroundColor: '#2C9C94', 
-    paddingVertical: 12, 
-    paddingHorizontal: 40,
-    borderRadius: 10,
-    elevation: 3,
+    paddingVertical: 14, 
+    paddingHorizontal: 50,
+    borderRadius: 12,
+    elevation: 4,
     marginTop: 10,
   },
   buttonText: {
     color: '#fff',
     fontSize: 18,
-    fontWeight: 'bold'
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
   },
   signupText: {
-    marginTop: 20,
-    fontSize: 16,
-    color: '#5A2E18',
+    marginTop: 25,
+    fontSize: 15,
+    color: '#4A2C2A',
   },
   signupLink: {
     color: '#D35225',

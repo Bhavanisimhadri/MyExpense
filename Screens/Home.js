@@ -14,43 +14,39 @@ const categories = [
 ];
 
 const HomeScreen = ({ navigation, route }) => {
- console.log("Home route params:", route.params); // 👈 add this
+  console.log("Home route params:", route.params);
 
-  const { mobile } = route.params || {}; // 👈 safe access
+  const { mobile } = route.params || {};
 
- const handleCategoryPress = (category) => {
-  console.log("Category pressed:", category.name, "Mobile:", mobile);
+  const handleCategoryPress = (category) => {
+    console.log("Category pressed:", category.name, "Mobile:", mobile);
 
-  db.transaction(
-    (tx) => {
-      tx.executeSql(
-        'UPDATE Users SET category = ? WHERE mobile = ?',
-        [category.name, mobile],
-        (_, result) => {
-          console.log("✅ Category saved:", category.name, "Rows affected:", result.rowsAffected);
+    db.transaction(
+      (tx) => {
+        tx.executeSql(
+          'UPDATE Users SET category = ? WHERE mobile = ?',
+          [category.name, mobile],
+          (_, result) => {
+            console.log("✅ Category saved:", category.name, "Rows affected:", result.rowsAffected);
 
-          if (result.rowsAffected > 0) {
-            console.log("➡️ Navigating to Login");
-            navigation.replace(category.screen, { mobile });
-          } else {
-            console.log("⚠️ No row updated! Mobile may not exist:", mobile);
-            Alert.alert("Error", "User not found in database.");
+            if (result.rowsAffected > 0) {
+              console.log("➡️ Navigating to Login");
+              navigation.replace(category.screen, { mobile });
+            } else {
+              console.log("⚠️ No row updated! Mobile may not exist:", mobile);
+              Alert.alert("Error", "User not found in database.");
+            }
           }
-        }
-      );
-    },
-    (err) => {
-      console.log("❌ Transaction error:", err);
-    },
-    () => {
-      console.log("✅ Transaction completed");
-    }
-  );
-};
-
-
-
-
+        );
+      },
+      (err) => {
+        console.log("❌ Transaction error:", err);
+      },
+      () => {
+        console.log("✅ Transaction completed");
+      }
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -68,12 +64,52 @@ const HomeScreen = ({ navigation, route }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F7E3B0', alignItems: 'center', paddingTop: 40 },
-  title: { fontSize: 24, fontWeight: 'bold', color: '#D35225', marginBottom:80 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', width: '90%' },
-  card: { width: '45%', backgroundColor: '#fff', borderRadius: 10, alignItems: 'center', marginBottom: 20, padding: 10, elevation: 3 },
-  image: { width: 100, height: 100, marginBottom: 10, resizeMode: 'contain' },
-  label: { fontSize: 18, fontWeight: 'bold', color: '#5A2E18' },
+  container: { 
+    flex: 1, 
+    backgroundColor: '#FFF8EC', 
+    alignItems: 'center', 
+    paddingTop: 50 
+  },
+  title: { 
+    fontSize: 26, 
+    fontWeight: 'bold', 
+    color: '#D35225', 
+    marginBottom: 40,
+    letterSpacing: 1,
+  },
+  grid: { 
+    flexDirection: 'row', 
+    flexWrap: 'wrap', 
+    justifyContent: 'space-around', 
+    width: '95%' 
+  },
+  card: { 
+    width: '42%', 
+    backgroundColor: '#fff', 
+    borderRadius: 16, 
+    alignItems: 'center', 
+    marginBottom: 25, 
+    paddingVertical: 20, 
+    paddingHorizontal: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 6,
+  },
+  image: { 
+    width: 110, 
+    height: 110, 
+    marginBottom: 15, 
+    resizeMode: 'contain' 
+  },
+  label: { 
+    fontSize: 18, 
+    fontWeight: '600', 
+    color: '#4A2C2A',
+    textAlign: 'center',
+    letterSpacing: 0.5,
+  },
 });
 
 export default HomeScreen;

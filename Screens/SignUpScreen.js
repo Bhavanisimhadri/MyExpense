@@ -83,7 +83,7 @@ const SignUpScreen = ({ navigation }) => {
         <Text style={styles.buttonText}>Sign Up</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => navigation.goBack()}>
+      <TouchableOpacity onPress={() => navigation.navigate('Login')}>
         <Text style={styles.loginText}>
           Already have an account? <Text style={styles.loginLink}>Login</Text>
         </Text>
@@ -97,31 +97,55 @@ const styles = StyleSheet.create({
     flex: 1, 
     justifyContent: 'center', 
     alignItems: 'center', 
-    backgroundColor: '#F7E3B0', 
+    backgroundColor: '#FFF8EC', 
     padding: 20 
   },
-  title: { fontSize: 28, fontWeight: 'bold', color: '#D35225', marginBottom: 20 },
+  title: { 
+    fontSize: 30, 
+    fontWeight: 'bold', 
+    color: '#D35225', 
+    marginBottom: 5,
+    letterSpacing: 1,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#6A4E42',
+    marginBottom: 30,
+  },
   input: { 
     borderWidth: 1, 
-    borderColor: '#ccc', 
-    padding: 12, 
-    marginBottom: 20, 
+    borderColor: '#ddd', 
+    padding: 14, 
+    marginBottom: 18, 
     width: '85%', 
-    borderRadius: 8, 
+    borderRadius: 12, 
     backgroundColor: '#fff', 
-    fontSize: 16 
+    fontSize: 16,
+    elevation: 2,
   },
   button: { 
     backgroundColor: '#2C9C94', 
-    paddingVertical: 12, 
-    paddingHorizontal: 40, 
-    borderRadius: 10, 
-    elevation: 3, 
+    paddingVertical: 14, 
+    paddingHorizontal: 50, 
+    borderRadius: 12, 
+    elevation: 4, 
     marginTop: 10 
   },
-  buttonText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
-  loginText: { marginTop: 20, fontSize: 16, color: '#5A2E18' },
-  loginLink: { color: '#D35225', fontWeight: 'bold' }
+  buttonText: { 
+    color: '#fff', 
+    fontSize: 18, 
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
+  },
+  loginText: { 
+    marginTop: 25, 
+    fontSize: 15, 
+    color: '#4A2C2A' 
+  },
+  loginLink: { 
+    color: '#D35225', 
+    fontWeight: 'bold' 
+  }
 });
 
 export default SignUpScreen;
