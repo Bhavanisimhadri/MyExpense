@@ -20,9 +20,12 @@ const StudentScreen = ({ route }) => {
   const [monthlyBudget, setMonthlyBudget] = useState(0);
   const [totalSpent, setTotalSpent] = useState(0);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isBudgetModalVisible, setIsBudgetModalVisible] = useState(false);
+  const [budgetInput, setBudgetInput] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [expenseAmount, setExpenseAmount] = useState('');
   const [expenseDescription, setExpenseDescription] = useState('');
+  const [selectedPeriod, setSelectedPeriod] = useState('1 Month');
 
   // Student-specific expense categories
   const studentCategories = [
@@ -36,11 +39,19 @@ const StudentScreen = ({ route }) => {
     { name: 'Miscellaneous', icon: '📋', color: '#795548' }
   ];
 
+  // Time periods for expense tracking
+  const timePeriods = [
+    { name: '1 Month', months: 1, icon: '📅' },
+    { name: '3 Months', months: 3, icon: '📊' },
+    { name: '6 Months', months: 6, icon: '📈' },
+    { name: '1 Year', months: 12, icon: '🗓️' }
+  ];
+
   useEffect(() => {
     initializeDatabase();
     loadExpenses();
     loadBudget();
-  }, []);
+  }, [selectedPeriod]); // Reload when period changes
 
   const initializeDatabase = () => {
     db.transaction(tx => {
@@ -64,12 +75,24 @@ const StudentScreen = ({ route }) => {
     });
   };
 
+  const getDateRangeForPeriod = (periodName) => {
+    const now = new Date();
+    const period = timePeriods.find(p => p.name === periodName);
+    const startDate = new Date(now.getFullYear(), now.getMonth() - period.months + 1, 1);
+    const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    
+    return {
+      start: startDate.toISOString().slice(0, 10), // YYYY-MM-DD format
+      end: endDate.toISOString().slice(0, 10)
+    };
+  };
+
   const loadExpenses = () => {
-    const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM format
+    const dateRange = getDateRangeForPeriod(selectedPeriod);
     db.transaction(tx => {
       tx.executeSql(
-        'SELECT * FROM StudentExpenses WHERE mobile = ? AND date LIKE ? ORDER BY date DESC',
-        [mobile, `${currentMonth}%`],
+        'SELECT * FROM StudentExpenses WHERE mobile = ? AND date >= ? AND date <= ? ORDER BY date DESC',
+        [mobile, dateRange.start, dateRange.end],
         (_, result) => {
           const rows = result.rows;
           let expenseList = [];
@@ -132,42 +155,52 @@ const StudentScreen = ({ route }) => {
     });
   };
 
-  const setBudget = () => {
-    Alert.prompt(
-      'Set Monthly Budget',
-      'Enter your monthly budget:',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Save',
-          onPress: (budget) => {
-            const budgetAmount = parseFloat(budget);
-            if (!isNaN(budgetAmount) && budgetAmount > 0) {
-              db.transaction(tx => {
-                tx.executeSql(
-                  'INSERT OR REPLACE INTO StudentBudget (mobile, monthly_budget) VALUES (?, ?)',
-                  [mobile, budgetAmount],
-                  () => {
-                    setMonthlyBudget(budgetAmount);
-                    Alert.alert('Success', 'Budget set successfully!');
-                  }
-                );
-              });
-            }
-          }
+  const openBudgetModal = () => {
+    setBudgetInput(monthlyBudget.toString());
+    setIsBudgetModalVisible(true);
+  };
+
+  const saveBudget = () => {
+    const budgetAmount = parseFloat(budgetInput);
+    if (isNaN(budgetAmount) || budgetAmount <= 0) {
+      Alert.alert('Error', 'Please enter a valid budget amount');
+      return;
+    }
+
+    db.transaction(tx => {
+      tx.executeSql(
+        'INSERT OR REPLACE INTO StudentBudget (mobile, monthly_budget) VALUES (?, ?)',
+        [mobile, budgetAmount],
+        () => {
+          setMonthlyBudget(budgetAmount);
+          setIsBudgetModalVisible(false);
+          setBudgetInput('');
+          Alert.alert('Success', 'Budget set successfully!');
+        },
+        (_, error) => {
+          Alert.alert('Error', 'Failed to save budget');
         }
-      ],
-      'plain-text',
-      monthlyBudget.toString()
-    );
+      );
+    });
   };
 
   const getBudgetStatus = () => {
     if (monthlyBudget === 0) return { color: '#666', text: 'No budget set' };
-    const percentage = (totalSpent / monthlyBudget) * 100;
-    if (percentage > 100) return { color: '#F44336', text: `Over budget by ₹${(totalSpent - monthlyBudget).toFixed(2)}` };
+    
+    // Calculate period budget based on selected period
+    const period = timePeriods.find(p => p.name === selectedPeriod);
+    const periodBudget = monthlyBudget * period.months;
+    
+    const percentage = (totalSpent / periodBudget) * 100;
+    if (percentage > 100) return { color: '#F44336', text: `Over budget by ₹${(totalSpent - periodBudget).toFixed(2)}` };
     if (percentage > 80) return { color: '#FF9800', text: `${percentage.toFixed(1)}% used` };
-    return { color: '#4CAF50', text: `₹${(monthlyBudget - totalSpent).toFixed(2)} remaining` };
+    return { color: '#4CAF50', text: `₹${(periodBudget - totalSpent).toFixed(2)} remaining` };
+  };
+
+  const getPeriodBudgetAmount = () => {
+    if (monthlyBudget === 0) return '0.00';
+    const period = timePeriods.find(p => p.name === selectedPeriod);
+    return (monthlyBudget * period.months).toFixed(2);
   };
 
   const budgetStatus = getBudgetStatus();
@@ -191,19 +224,51 @@ const StudentScreen = ({ route }) => {
         <Text style={styles.subtitle}>Welcome, {mobile}</Text>
       </View>
 
+      {/* Period Selection */}
+      <View style={styles.periodSection}>
+        <Text style={styles.periodTitle}>Tracking Period</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.periodScroll}>
+          {timePeriods.map((period, index) => (
+            <TouchableOpacity
+              key={index}
+              style={[
+                styles.periodButton,
+                selectedPeriod === period.name && styles.selectedPeriodButton
+              ]}
+              onPress={() => setSelectedPeriod(period.name)}
+            >
+              <Text style={styles.periodIcon}>{period.icon}</Text>
+              <Text style={[
+                styles.periodButtonText,
+                selectedPeriod === period.name && styles.selectedPeriodText
+              ]}>
+                {period.name}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+
       {/* Budget Overview */}
       <View style={styles.budgetCard}>
         <View style={styles.budgetHeader}>
-          <Text style={styles.budgetTitle}>Monthly Budget</Text>
-          <TouchableOpacity style={styles.setBudgetBtn} onPress={setBudget}>
+          <Text style={styles.budgetTitle}>
+            {selectedPeriod === '1 Month' ? 'Monthly Budget' : `${selectedPeriod} Budget`}
+          </Text>
+          <TouchableOpacity style={styles.setBudgetBtn} onPress={openBudgetModal}>
             <Text style={styles.setBudgetText}>Set Budget</Text>
           </TouchableOpacity>
         </View>
-        <Text style={styles.budgetAmount}>₹{monthlyBudget.toFixed(2)}</Text>
+        <Text style={styles.budgetAmount}>₹{getPeriodBudgetAmount()}</Text>
         <Text style={styles.spentAmount}>Spent: ₹{totalSpent.toFixed(2)}</Text>
         <Text style={[styles.budgetStatus, { color: budgetStatus.color }]}>
           {budgetStatus.text}
         </Text>
+        {selectedPeriod !== '1 Month' && (
+          <Text style={styles.budgetNote}>
+            Based on monthly budget: ₹{monthlyBudget.toFixed(2)}
+          </Text>
+        )}
       </View>
 
       {/* Action Buttons */}
@@ -218,10 +283,15 @@ const StudentScreen = ({ route }) => {
 
       {/* Recent Expenses */}
       <View style={styles.expensesSection}>
-        <Text style={styles.sectionTitle}>Recent Expenses</Text>
+        <View style={styles.expensesHeader}>
+          <Text style={styles.sectionTitle}>
+            {selectedPeriod} Expenses ({expenses.length})
+          </Text>
+          <Text style={styles.totalAmount}>₹{totalSpent.toFixed(2)}</Text>
+        </View>
         {expenses.length > 0 ? (
           <FlatList
-            data={expenses.slice(0, 5)}
+            data={expenses.slice(0, 10)}
             renderItem={renderExpenseItem}
             keyExtractor={(item) => item.id.toString()}
             style={styles.expensesList}
@@ -229,7 +299,9 @@ const StudentScreen = ({ route }) => {
           />
         ) : (
           <View style={styles.noExpenses}>
-            <Text style={styles.noExpensesText}>No expenses yet this month</Text>
+            <Text style={styles.noExpensesText}>
+              No expenses yet for {selectedPeriod.toLowerCase()}
+            </Text>
           </View>
         )}
       </View>
@@ -296,6 +368,65 @@ const StudentScreen = ({ route }) => {
                 onPress={addExpense}
               >
                 <Text style={styles.saveButtonText}>Add Expense</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Set Budget Modal */}
+      <Modal
+        visible={isBudgetModalVisible}
+        animationType="slide"
+        transparent={true}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.budgetModalContent}>
+            <Text style={styles.modalTitle}>Set Monthly Budget</Text>
+            <Text style={styles.budgetModalSubtitle}>
+              Set your monthly budget. It will be calculated for different periods automatically.
+            </Text>
+            
+            <Text style={styles.inputLabel}>Monthly Budget Amount (₹)</Text>
+            <TextInput
+              style={styles.budgetInput}
+              value={budgetInput}
+              onChangeText={setBudgetInput}
+              placeholder="Enter your monthly budget"
+              keyboardType="numeric"
+              autoFocus={true}
+            />
+            
+            <View style={styles.budgetPresets}>
+              <Text style={styles.presetsLabel}>Quick presets:</Text>
+              <View style={styles.presetButtons}>
+                {[2000, 5000, 10000, 15000].map((preset) => (
+                  <TouchableOpacity
+                    key={preset}
+                    style={styles.presetButton}
+                    onPress={() => setBudgetInput(preset.toString())}
+                  >
+                    <Text style={styles.presetButtonText}>₹{preset}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity 
+                style={[styles.modalButton, styles.cancelButton]} 
+                onPress={() => {
+                  setIsBudgetModalVisible(false);
+                  setBudgetInput('');
+                }}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.modalButton, styles.saveButton]} 
+                onPress={saveBudget}
+              >
+                <Text style={styles.saveButtonText}>Save Budget</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -529,6 +660,117 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#fff',
     fontWeight: 'bold',
+  },
+  budgetModalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 25,
+    maxHeight: '70%',
+  },
+  budgetModalSubtitle: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 25,
+    lineHeight: 20,
+  },
+  budgetInput: {
+    backgroundColor: '#f8f9fa',
+    borderWidth: 2,
+    borderColor: '#4A90E2',
+    borderRadius: 8,
+    padding: 15,
+    fontSize: 18,
+    marginBottom: 20,
+    textAlign: 'center',
+    fontWeight: 'bold',
+  },
+  budgetPresets: {
+    marginBottom: 25,
+  },
+  presetsLabel: {
+    fontSize: 16,
+    color: '#333',
+    marginBottom: 10,
+    fontWeight: '500',
+  },
+  presetButtons: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  presetButton: {
+    backgroundColor: '#E3F2FD',
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    borderRadius: 20,
+    marginBottom: 8,
+    width: '48%',
+    alignItems: 'center',
+  },
+  presetButtonText: {
+    color: '#4A90E2',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  periodSection: {
+    paddingHorizontal: 20,
+    marginBottom: 15,
+  },
+  periodTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 10,
+  },
+  periodScroll: {
+    marginBottom: 5,
+  },
+  periodButton: {
+    backgroundColor: '#f0f0f0',
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    borderRadius: 20,
+    marginRight: 10,
+    alignItems: 'center',
+    minWidth: 80,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  selectedPeriodButton: {
+    backgroundColor: '#4A90E2',
+    borderColor: '#4A90E2',
+  },
+  periodIcon: {
+    fontSize: 16,
+    marginBottom: 3,
+  },
+  periodButtonText: {
+    fontSize: 12,
+    color: '#333',
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  selectedPeriodText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  budgetNote: {
+    fontSize: 12,
+    color: '#999',
+    marginTop: 5,
+    fontStyle: 'italic',
+  },
+  expensesHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  totalAmount: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#4A90E2',
   },
 });
 
