@@ -1,5 +1,16 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ImageBackground, TextInput, ScrollView, Image, TouchableOpacity, Alert } from 'react-native';
+import { 
+  View, 
+  Text, // Ensure Text is imported
+  StyleSheet, 
+  ImageBackground, 
+  TextInput, 
+  ScrollView, 
+  Image, 
+  TouchableOpacity, Alert,
+  KeyboardAvoidingView, 
+  Platform 
+} from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 const WomenScreen = ({ route, navigation }) => {
@@ -49,48 +60,58 @@ const WomenScreen = ({ route, navigation }) => {
   };
 
   const renderTwoInputRow = (data, section) => (
-    data.map((row, index) => (
-      <View key={index} style={styles.rowContainer}>
-        <TextInput
-          style={styles.smallInput}
-          placeholder="Element"
-          value={row.element}
-          onChangeText={(val) => handleInputChange(section, index, 'element', val)}
-        />
-        <TextInput
-          style={styles.smallInput}
-          placeholder="Amount"
-          keyboardType="numeric"
-          value={row.amount}
-          onChangeText={(val) => handleInputChange(section, index, 'amount', val)}
-        />
-        <TouchableOpacity onPress={() => handleRemoveRow(section, index)}>
-          <Ionicons name="remove-circle-outline" size={28} color="#d9534f" />
-        </TouchableOpacity>
-      </View>
-    ))
-  );
-
-  const renderSingleInputRow = (data, section) => (
-    data.map((item, index) => (
-      <View key={index} style={styles.rowContainer}>
-        <TextInput
-          style={styles.largeInput}
-          placeholder={section === 'notes' ? "Note" : "Bucket Item"}
-          value={section === 'notes' ? item : item.item}
-          onChangeText={(val) => handleInputChange(section, index, section === 'notes' ? null : 'item', val)}
-        />
-        {section === 'bucket' ? (
-          <TouchableOpacity onPress={() => toggleDone(index)}>
-            <Ionicons name={item.done ? "checkmark-circle" : "ellipse-outline"} size={28} color="#28a745" />
-          </TouchableOpacity>
-        ) : (
+    <ScrollView style={styles.sectionContentScroll}>
+      {data.map((row, index) => (
+        <View key={index} style={styles.rowContainer}>
+          <TextInput
+            style={styles.smallInput}
+            placeholder="Element"
+            value={row.element}
+            onChangeText={(val) => handleInputChange(section, index, 'element', val)}
+          />
+          <TextInput
+            style={styles.smallInput}
+            placeholder="Amount"
+            keyboardType="numeric"
+            value={row.amount}
+            onChangeText={(val) => handleInputChange(section, index, 'amount', val)}
+          />
           <TouchableOpacity onPress={() => handleRemoveRow(section, index)}>
             <Ionicons name="remove-circle-outline" size={28} color="#d9534f" />
           </TouchableOpacity>
-        )}
-      </View>
-    ))
+        </View>
+      ))}
+      <TouchableOpacity style={styles.addButton} onPress={() => handleAddRow(section)}>
+        <Ionicons name="add-circle-outline" size={30} color="#007bff" />
+      </TouchableOpacity>
+    </ScrollView>
+  );
+
+  const renderSingleInputRow = (data, section) => (
+    <ScrollView style={styles.sectionContentScroll}>
+      {data.map((item, index) => (
+        <View key={index} style={styles.rowContainer}>
+          <TextInput
+            style={styles.largeInput}
+            placeholder={section === 'notes' ? "Note" : "Bucket Item"}
+            value={section === 'notes' ? item : item.item}
+            onChangeText={(val) => handleInputChange(section, index, section === 'notes' ? null : 'item', val)}
+          />
+          {section === 'bucket' ? (
+            <TouchableOpacity onPress={() => toggleDone(index)}>
+              <Ionicons name={item.done ? "checkmark-circle" : "ellipse-outline"} size={28} color="#28a745" />
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity onPress={() => handleRemoveRow(section, index)}>
+              <Ionicons name="remove-circle-outline" size={28} color="#d9534f" />
+            </TouchableOpacity>
+          )}
+        </View>
+      ))}
+      <TouchableOpacity style={styles.addButton} onPress={() => handleAddRow(section)}>
+        <Ionicons name="add-circle-outline" size={30} color="#007bff" />
+      </TouchableOpacity>
+    </ScrollView>
   );
 
   return (
@@ -150,54 +171,60 @@ const WomenScreen = ({ route, navigation }) => {
             />
           </View>
 
-          {/* Conditional Rendering: Cards or Section */}
-          {!selectedSection ? (
-            <View style={styles.sectionsContainer}>
-              <TouchableOpacity style={styles.sectionCard} onPress={() => setSelectedSection('needs')}>
-                <View style={styles.sectionImageWrapper}><Image source={require('../assets/needs.jpg')} style={styles.sectionImage} /></View>
-                <Text style={styles.sectionText}>Needs</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.sectionCard} onPress={() => setSelectedSection('wants')}>
-                <View style={styles.sectionImageWrapper}><Image source={require('../assets/wants.jpg')} style={styles.sectionImage} /></View>
-                <Text style={styles.sectionText}>Wants</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.sectionCard} onPress={() => setSelectedSection('notes')}>
-                <View style={styles.sectionImageWrapper}><Image source={require('../assets/notes.jpg')} style={styles.sectionImage} /></View>
-                <Text style={styles.sectionText}>Notes</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.sectionCard} onPress={() => setSelectedSection('bucket')}>
-                <View style={styles.sectionImageWrapper}><Image source={require('../assets/bucket.jpg')} style={styles.sectionImage} /></View>
-                <Text style={styles.sectionText}>Bucket List</Text>
-              </TouchableOpacity>
-            </View>
+              <View style={styles.sectionsContainer}>
+                <TouchableOpacity style={styles.sectionCard} onPress={() => setSelectedSection('needs')}>
+                  <View style={styles.sectionImageWrapper}><Image source={require('../assets/needs.jpg')} style={styles.sectionImage} /></View>
+                  <Text style={styles.sectionText}>Needs</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.sectionCard} onPress={() => setSelectedSection('wants')}>
+                  <View style={styles.sectionImageWrapper}><Image source={require('../assets/wants.jpg')} style={styles.sectionImage} /></View>
+                  <Text style={styles.sectionText}>Wants</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.sectionCard} onPress={() => setSelectedSection('notes')}>
+                  <View style={styles.sectionImageWrapper}><Image source={require('../assets/notes.jpg')} style={styles.sectionImage} /></View>
+                  <Text style={styles.sectionText}>Notes</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.sectionCard} onPress={() => setSelectedSection('bucket')}>
+                  <View style={styles.sectionImageWrapper}><Image source={require('../assets/bucket.jpg')} style={styles.sectionImage} /></View>
+                  <Text style={styles.sectionText}>Bucket List</Text>
+                </TouchableOpacity>
+              </View>
+            </>
           ) : (
-            <View style={styles.sectionContainer}>
-              <TouchableOpacity onPress={() => setSelectedSection(null)}  style={{marginBottom:20}}>
+            <View style={styles.fullScreenSectionContainer}> 
+              <TouchableOpacity onPress={() => setSelectedSection(null)}  style={styles.backButton}>
                 <Ionicons name="arrow-back" size={30} color="#702c51" />
               </TouchableOpacity>
               <Text style={styles.sectionHeader}>
                 {selectedSection.charAt(0).toUpperCase() + selectedSection.slice(1)}
               </Text>
+              
+              {/* Corrected: Income and Savings display inside Text components */}
+              <View style={styles.sectionSummaryDisplay}>
+                <Text style={styles.sectionSummaryText}>
+                  Income: <Text style={styles.sectionSummaryAmount}>${monthlyIncome || '0'}</Text>
+                </Text>
+                <Text style={styles.sectionSummaryText}>
+                  Savings: <Text style={styles.sectionSummaryAmount}>${savings || '0'}</Text>
+                </Text>
+              </View>
 
               {selectedSection === 'needs' && renderTwoInputRow(needs, 'needs')}
               {selectedSection === 'wants' && renderTwoInputRow(wants, 'wants')}
               {selectedSection === 'notes' && renderSingleInputRow(notes, 'notes')}
               {selectedSection === 'bucket' && renderSingleInputRow(bucketList, 'bucket')}
-
-              <TouchableOpacity style={styles.addButton} onPress={() => handleAddRow(selectedSection)}>
-                <Ionicons name="add-circle-outline" size={30} color="#007bff" />
-              </TouchableOpacity>
             </View>
           )}
 
         </ScrollView>
-      </View>
+      </KeyboardAvoidingView>
     </ImageBackground>
   );
 };
 
 const styles = StyleSheet.create({
   background: { flex: 1, width: '100%', height: '100%' },
+  keyboardAvoidingContainer: { flex: 1 }, 
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.3)' },
   header: {
     flexDirection: 'row',
