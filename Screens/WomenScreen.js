@@ -144,8 +144,8 @@ const WomenScreen = ({ route }) => {
             </View>
           ) : (
             <View style={styles.sectionContainer}>
-              <TouchableOpacity onPress={() => setSelectedSection(null)}>
-                <Text style={{color:'#fff', marginBottom:15}}>← Back to Sections</Text>
+              <TouchableOpacity onPress={() => setSelectedSection(null)}  style={{marginBottom:20}}>
+                <Ionicons name="arrow-back" size={30} color="#702c51" />
               </TouchableOpacity>
               <Text style={styles.sectionHeader}>
                 {selectedSection.charAt(0).toUpperCase() + selectedSection.slice(1)}
