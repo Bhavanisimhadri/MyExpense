@@ -110,12 +110,12 @@ const LoginScreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
       {/* Admin Button - Top Right */}
-      <TouchableOpacity 
+      {/* <TouchableOpacity 
         style={styles.adminButton}
         onPress={() => navigation.navigate('AdminLogin')}
       >
-        <Text style={styles.adminButtonText}>⚙️</Text>
-      </TouchableOpacity>
+        <Text style={styles.adminButtonText}>🔑</Text>
+      </TouchableOpacity> */}
       
       <Text style={styles.title}>Welcome Back</Text>
       <Text style={styles.label}>Enter Mobile Number</Text>

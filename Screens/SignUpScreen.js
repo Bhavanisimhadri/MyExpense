@@ -90,6 +90,13 @@ const SignUpScreen = ({ navigation }) => {
         <Text style={styles.loginText}>
           Already have an account? <Text style={styles.loginLink}>Login</Text>
         </Text>
+        
+      </TouchableOpacity>
+       <TouchableOpacity onPress={() => navigation.navigate('AdminLogin')}>
+        <Text style={styles.loginText}>
+         <Text style={styles.loginLink}>Admin Login</Text>
+        </Text>
+        
       </TouchableOpacity>
     </View>
   );

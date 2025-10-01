@@ -27,7 +27,7 @@ const AdminLoginScreen = ({ navigation }) => {
         style={styles.backButton}
         onPress={() => navigation.goBack()}
       >
-        <Text style={styles.backButtonText}>← Back</Text>
+        <Text style={styles.backButtonText}>🔙</Text>
       </TouchableOpacity>
 
       <Text style={styles.title}>Admin Login</Text>
@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   backButtonText: {
-    fontSize: 16,
+    fontSize: 20,
     color: '#D35225',
     fontWeight: 'bold',
   },
