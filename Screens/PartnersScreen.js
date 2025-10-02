@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
@@ -189,20 +190,20 @@ const PartnersScreen = ({ route, navigation }) => {
 
   // --- Handlers ---
   const handleAddRow = (section) => {
-    if (section === 'herExpenses' && (!herExpenses[herExpenses.length - 1].element.trim() || !herExpenses[herExpenses.length - 1].amount)) {
-      Alert.alert("Validation Error", "Please fill in the current expense before adding a new one."); return;
+    if (section === 'herExpenses' && herExpenses.length > 0 && (!herExpenses[herExpenses.length - 1].element.trim() || !herExpenses[herExpenses.length - 1].amount)) {
+        Alert.alert("Validation Error", "Please fill in the current expense before adding a new one."); return;
     }
-    if (section === 'hisExpenses' && (!hisExpenses[hisExpenses.length - 1].element.trim() || !hisExpenses[hisExpenses.length - 1].amount)) {
-      Alert.alert("Validation Error", "Please fill in the current expense before adding a new one."); return;
+    if (section === 'hisExpenses' && hisExpenses.length > 0 && (!hisExpenses[hisExpenses.length - 1].element.trim() || !hisExpenses[hisExpenses.length - 1].amount)) {
+        Alert.alert("Validation Error", "Please fill in the current expense before adding a new one."); return;
     }
-    if (section === 'notes' && !notes[notes.length - 1].trim()) {
-      Alert.alert("Validation Error", "Please fill in the current 'Note' before adding a new one."); return;
+    if (section === 'notes' && notes.length > 0 && !notes[notes.length - 1].trim()) {
+        Alert.alert("Validation Error", "Please fill in the current 'Note' before adding a new one."); return;
     }
-    if (section === 'coupleGoals' && !coupleGoals[coupleGoals.length - 1].item.trim()) {
-      Alert.alert("Validation Error", "Please fill in the current 'Couple Goal' before adding a new one."); return;
+    if (section === 'coupleGoals' && coupleGoals.length > 0 && !coupleGoals[coupleGoals.length - 1].item.trim()) {
+        Alert.alert("Validation Error", "Please fill in the current 'Couple Goal' before adding a new one."); return;
     }
-    if (section === 'memories' && (!memories[memories.length - 1].note.trim() && !memories[memories.length - 1].image)) {
-      Alert.alert("Validation Error", "Please add an image or note before adding a new memory."); return;
+    if (section === 'memories' && memories.length > 0 && (!memories[memories.length - 1].note.trim() && !memories[memories.length - 1].image)) {
+        Alert.alert("Validation Error", "Please add an image or note before adding a new memory."); return;
     }
 
     if (section === 'herExpenses') setHerExpenses([...herExpenses, { element: '', amount: '' }]);
@@ -210,15 +211,30 @@ const PartnersScreen = ({ route, navigation }) => {
     if (section === 'notes') setNotes([...notes, '']);
     if (section === 'coupleGoals') setCoupleGoals([...coupleGoals, { item: '', done: false }]);
     if (section === 'memories') setMemories([...memories, { image: null, note: '' }]);
-  };
+};
 
-  const handleRemoveRow = (section, index) => {
-    if (section === 'herExpenses') setHerExpenses(herExpenses.filter((_, i) => i !== index));
-    if (section === 'hisExpenses') setHisExpenses(hisExpenses.filter((_, i) => i !== index));
-    if (section === 'notes') setNotes(notes.filter((_, i) => i !== index));
-    if (section === 'coupleGoals') setCoupleGoals(coupleGoals.filter((_, i) => i !== index));
-    if (section === 'memories') setMemories(memories.filter((_, i) => i !== index));
-  };
+const handleRemoveRow = (section, index) => {
+    if (section === 'herExpenses') {
+        const updated = herExpenses.filter((_, i) => i !== index);
+        setHerExpenses(updated.length > 0 ? updated : [{ element: '', amount: '' }]);
+    }
+    if (section === 'hisExpenses') {
+        const updated = hisExpenses.filter((_, i) => i !== index);
+        setHisExpenses(updated.length > 0 ? updated : [{ element: '', amount: '' }]);
+    }
+    if (section === 'notes') {
+        const updated = notes.filter((_, i) => i !== index);
+        setNotes(updated.length > 0 ? updated : ['']);
+    }
+    if (section === 'coupleGoals') {
+        const updated = coupleGoals.filter((_, i) => i !== index);
+        setCoupleGoals(updated.length > 0 ? updated : [{ item: '', done: false }]);
+    }
+    if (section === 'memories') {
+        const updated = memories.filter((_, i) => i !== index);
+        setMemories(updated.length > 0 ? updated : [{ image: null, note: '' }]);
+    }
+};
 
   const handleInputChange = (section, index, field, value) => {
     if (section === 'herExpenses') { const updated = [...herExpenses]; updated[index][field] = value; setHerExpenses(updated); }
@@ -354,69 +370,66 @@ const PartnersScreen = ({ route, navigation }) => {
     </ScrollView>
   );
   
-  // FIX: Implemented the missing renderReports function
   const renderReports = () => {
     const monthNames = ["", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
     
-    // Group data by year
     const reportsByYear = Object.keys(allFinancialData).reduce((acc, key) => {
-      const parts = key.split('_');
-      const year = parts[2];
-      const month = parseInt(parts[3], 10);
-      const data = allFinancialData[key];
+        const parts = key.split('_');
+        if (parts.length < 4) return acc; 
+        const year = parts[2];
+        const month = parseInt(parts[3], 10);
+        const data = allFinancialData[key];
 
-      if (!acc[year]) {
-        acc[year] = [];
-      }
-      
-      // Calculate totals for this month's data
-      const totalHerExp = (data.herExpenses || []).reduce((sum, item) => sum + parseAmount(item.amount), 0);
-      const totalHisExp = (data.hisExpenses || []).reduce((sum, item) => sum + parseAmount(item.amount), 0);
-      const totalIncome = parseAmount(data.herMonthlyIncome) + parseAmount(data.hisMonthlyIncome);
-      const totalSavings = parseAmount(data.herSavings) + parseAmount(data.hisSavings);
+        if (!acc[year]) {
+            acc[year] = [];
+        }
 
-      acc[year].push({
-        month,
-        monthName: monthNames[month],
-        totalIncome,
-        totalSavings,
-        totalExpenses: totalHerExp + totalHisExp,
-      });
+        const totalHerExp = (data.herExpenses || []).reduce((sum, item) => sum + parseAmount(item.amount), 0);
+        const totalHisExp = (data.hisExpenses || []).reduce((sum, item) => sum + parseAmount(item.amount), 0);
+        const totalIncome = parseAmount(data.herMonthlyIncome) + parseAmount(data.hisMonthlyIncome);
+        const totalSavings = parseAmount(data.herSavings) + parseAmount(data.hisSavings);
 
-      return acc;
+        acc[year].push({
+            month,
+            monthName: monthNames[month],
+            totalIncome,
+            totalSavings,
+            totalExpenses: totalHerExp + totalHisExp,
+        });
+
+        return acc;
     }, {});
 
-    // Sort years descending
     const sortedYears = Object.keys(reportsByYear).sort((a, b) => b - a);
 
     return (
-      <View style={styles.fullScreenSectionContainer}>
-        <TouchableOpacity onPress={() => setShowReports(false)} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={30} color="#C2185B" />
-        </TouchableOpacity>
-        <Text style={styles.sectionHeader}>Financial Reports</Text>
-        <ScrollView>
-          {sortedYears.length > 0 ? (
-            sortedYears.map(year => (
-              <View key={year} style={styles.reportYearContainer}>
-                <Text style={styles.reportYearHeader}>{year}</Text>
-                {reportsByYear[year].sort((a,b) => b.month - a.month).map(monthData => (
-                  <View key={monthData.month} style={styles.reportMonthContainer}>
-                    <Text style={styles.reportMonthHeader}>{monthData.monthName}</Text>
-                    <Text style={styles.reportSummaryText}>Total Income: ${monthData.totalIncome.toFixed(2)}</Text>
-                    <Text style={styles.reportSummaryText}>Total Savings: ${monthData.totalSavings.toFixed(2)}</Text>
-                    <Text style={styles.reportHighlightText}>Total Expenses: ${monthData.totalExpenses.toFixed(2)}</Text>
-                  </View>
-                ))}
-              </View>
-            ))
-          ) : (
-            <Text style={styles.noDataText}>No financial data recorded yet.</Text>
-          )}
-        </ScrollView>
-      </View>
+        <View style={styles.fullScreenSectionContainer}>
+            <TouchableOpacity onPress={() => setShowReports(false)} style={styles.backButton}>
+                <Ionicons name="arrow-back" size={30} color="#C2185B" />
+            </TouchableOpacity>
+            <Text style={styles.sectionHeader}>Financial Reports</Text>
+            <ScrollView>
+                {sortedYears.length > 0 ? (
+                    sortedYears.map(year => (
+                        <View key={year} style={styles.reportYearContainer}>
+                            <Text style={styles.reportYearHeader}>{year}</Text>
+                            {reportsByYear[year].sort((a, b) => b.month - a.month).map(monthData => (
+                                <View key={monthData.month} style={styles.reportMonthContainer}>
+                                    <Text style={styles.reportMonthHeader}>{monthData.monthName}</Text>
+                                    <Text style={styles.reportSummaryText}>Total Income: ${monthData.totalIncome.toFixed(2)}</Text>
+                                    <Text style={styles.reportSummaryText}>Total Savings: ${monthData.totalSavings.toFixed(2)}</Text>
+                                    <Text style={styles.reportHighlightText}>Total Expenses: ${monthData.totalExpenses.toFixed(2)}</Text>
+                                </View>
+                            ))}
+                        </View>
+                    ))
+                ) : (
+                    <Text style={styles.noDataText}>No financial data recorded yet.</Text>
+                )}
+            </ScrollView>
+        </View>
     );
-  };
+};
 
   return (
     <ImageBackground
@@ -451,23 +464,23 @@ const PartnersScreen = ({ route, navigation }) => {
               </TouchableOpacity>
               <View style={styles.sectionsContainer}>
                 <TouchableOpacity style={styles.sectionCard} onPress={() => setSelectedSection('herExpenses')}>
-                  <Ionicons name="woman-outline" size={50} color="#C2185B" />
+                <View style={styles.sectionImageWrapper}><Image source={require('../assets/her.png')} style={styles.sectionImage} /></View>
                   <Text style={styles.sectionText}>Her Expenses</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.sectionCard} onPress={() => setSelectedSection('hisExpenses')}>
-                  <Ionicons name="man-outline" size={50} color="#C2185B" />
+                <View style={styles.sectionImageWrapper}><Image source={require('../assets/his.webp')} style={styles.sectionImage} /></View>
                   <Text style={styles.sectionText}>His Expenses</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.sectionCard} onPress={() => setSelectedSection('coupleGoals')}>
-                  <Ionicons name="heart-circle-outline" size={50} color="#C2185B" />
+                <View style={styles.sectionImageWrapper}><Image source={require('../assets/couplegoals.jpg')} style={styles.sectionImage} /></View>
                   <Text style={styles.sectionText}>Couple Goals</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.sectionCard} onPress={() => setSelectedSection('notes')}>
-                  <Ionicons name="document-text-outline" size={50} color="#C2185B" />
+                <View style={styles.sectionImageWrapper}><Image source={require('../assets/notesc.jpg')} style={styles.sectionImage} /></View>
                   <Text style={styles.sectionText}>Notes</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.sectionCard} onPress={() => setSelectedSection('memories')}>
-                  <Ionicons name="images-outline" size={50} color="#C2185B" />
+                <View style={styles.sectionImageWrapper}><Image source={require('../assets/memories.jpg')} style={styles.sectionImage} /></View>
                   <Text style={styles.sectionText}>Memories</Text>
                 </TouchableOpacity>
               </View>
@@ -518,249 +531,268 @@ const PartnersScreen = ({ route, navigation }) => {
 };
 
 const styles = StyleSheet.create({
- background: { flex: 1, width: '100%', height: '100%', backgroundColor: '#FCE4EC' },
-  keyboardAvoidingContainer: { flex: 1 },
-  container: {
-    paddingVertical: 40,
-    paddingHorizontal: 25,
-    alignItems: 'center',
-    flexGrow: 1,
-  },
-  welcomeText: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#880E4F',
-    textAlign: 'center',
-    flexShrink: 1, // Allow text to shrink if needed
-  },
-  incomeInputContainer: {
-    width: '100%',
-    marginBottom: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    borderRadius: 15,
-    padding: 10,
-  },
-  partnerIncomeContainer:{
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  input: {
-    backgroundColor: 'rgba(255,255,255,0.95)',
-    borderRadius: 14,
-    paddingVertical: 12,
-    paddingHorizontal: 15,
-    fontSize: 16,
-    marginBottom: 10,
-    color: '#333',
-    width: '48%',
-  },
-  sectionsContainer: {
-    width: '100%',
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-around',
-    marginBottom: 25,
-  },
-  sectionCard: {
-    width: '46%',
-    backgroundColor: 'rgba(255,255,255,0.98)',
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
-    paddingVertical: 20,
-    elevation: 8,
-  },
-  sectionText: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#880E4F',
-    marginTop: 10,
-  },
-  fullScreenSectionContainer: {
-    width: '100%',
-    height: '100%', // Make it take full available space
-    backgroundColor: 'rgba(255,255,255,0.95)',
-    borderRadius: 20,
-    padding: 20,
-  },
-  backButton: {
-    marginBottom: 15,
-    alignSelf: 'flex-start',
-  },
-  sectionHeader: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#880E4F',
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  sectionSummaryDisplay: {
-    backgroundColor: 'rgba(194, 24, 91, 0.1)',
-    borderRadius: 12,
-    padding: 10,
-    marginBottom: 20,
-    alignItems: 'center',
-  },
-  sectionSummaryText: {
-    fontSize: 16,
-    color: '#880E4F',
-    fontWeight: '500',
-    marginVertical: 2,
-  },
-  sectionSummaryAmount: {
-    fontWeight: 'bold',
-    color: '#C2185B',
-  },
-  logoutText: {
-    color: '#880E4F',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  sectionContentScroll: {
-    flex: 1,
-    width: '100%',
-  },
-  rowContainer: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    marginBottom: 12 
-  },
-  memoryRowContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  smallInput: {
-    flex: 1,
-    backgroundColor: '#FCE4EC',
-    borderRadius: 12,
-    padding: 12,
-    marginRight: 8,
-    fontSize: 16,
-  },
-  largeInput: {
-    flex: 1,
-    backgroundColor: '#FCE4EC',
-    borderRadius: 12,
-    padding: 12,
-    marginRight: 8,
-    fontSize: 16,
-  },
-  memoryNoteInput: {
-    flex: 1,
-    backgroundColor: '#FCE4EC',
-    borderRadius: 12,
-    padding: 12,
-    marginHorizontal: 8,
-    fontSize: 16,
-    minHeight: 80,
-    textAlignVertical: 'top',
-  },
-  imagePickerContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: 12,
+  background: { flex: 1, width: '100%', height: '100%', backgroundColor: '#FCE4EC' },
+   keyboardAvoidingContainer: { flex: 1 },
+   container: {
+     paddingVertical: 40,
+     paddingHorizontal: 25,
+     alignItems: 'center',
+     flexGrow: 1,
+   },
+   welcomeText: {
+     fontSize: 28,
+     fontWeight: 'bold',
+     color: '#880E4F',
+     textAlign: 'center',
+     flexShrink: 1, // Allow text to shrink if needed
+   },
+   incomeInputContainer: {
+     width: '100%',
+     marginBottom: 10,
+     backgroundColor: 'rgba(255, 255, 255, 0.8)',
+     borderRadius: 15,
+     padding: 10,
+   },
+   partnerIncomeContainer:{
+     flexDirection: 'row',
+     justifyContent: 'space-between',
+   },
+   input: {
+     backgroundColor: 'rgba(255,255,255,0.95)',
+     borderRadius: 14,
+     paddingVertical: 12,
+     paddingHorizontal: 15,
+     fontSize: 16,
+     marginBottom: 10,
+     color: '#333',
+     width: '48%',
+   },
+   sectionsContainer: {
+     width: '100%',
+     flexDirection: 'row',
+     flexWrap: 'wrap',
+     justifyContent: 'space-around',
+     marginBottom: 25,
+   },
+   sectionCard: {
+     width: '46%',
+     backgroundColor: 'rgba(255,255,255,0.98)',
+     borderRadius: 20,
+     alignItems: 'center',
+     justifyContent: 'center',
+     marginBottom: 20,
+     paddingVertical: 20,
+     elevation: 8,
+   },
+   sectionImageWrapper: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     overflow: 'hidden',
-  },
-  memoryImage: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 12,
-  },
-  imagePlaceholder: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#F8BBD0',
+    marginBottom: 15,
+    backgroundColor: '#F7E7ED',
+    alignItems: 'center',
     justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#C2185B',
-    borderStyle: 'dashed',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
-  imagePlaceholderText: {
-    color: '#880E4F',
-    fontSize: 12,
-    marginTop: 5,
-    textAlign: 'center',
+  sectionImage: {
+    width: '90%',
+    height: '90%',
+    borderRadius: 35,
   },
-  addButton: {
-    marginTop: 10,
-    alignSelf: 'center',
-  },
-  reportsButton: {
-    backgroundColor: 'rgba(236, 64, 122, 0.8)',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 50,
-    alignItems: 'center',
-    marginBottom: 20
-  },
-  reportsLink: {
-    fontSize: 18,
-    color: '#fff',
-    fontWeight: '600',
-  },
-  reportYearContainer: {
-    marginBottom: 20,
-    backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 10,
-    elevation: 2,
-  },
-  reportYearHeader: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#880E4F',
-    marginBottom: 10
-  },
-  reportMonthContainer: {
-    marginTop: 10,
-    marginLeft: 10,
-    borderLeftWidth: 3,
-    borderLeftColor: '#F48FB1',
-    paddingLeft: 10
-  },
-  reportMonthHeader: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#C2185B'
-  },
-  reportSummaryText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#333',
-    marginBottom: 5
-  },
-  reportHighlightText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#AD1457',
-    marginTop: 4,
-    marginBottom: 2,
-    fontStyle: 'italic',
-  },
-  noDataText: {
-    textAlign: 'center',
-    marginTop: 40,
-    fontSize: 16,
-    color: '#880E4F',
-  },
-  welcomeContainer: {
-    flexDirection: 'row',
-    width: '100%',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 20,
-    marginBottom: 25,
-    paddingHorizontal: 5,
-  },
-  logoutIconButton: {
-    padding: 15,
-    borderRadius: 30,
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-  },
-});
-
-export default PartnersScreen;
+   sectionText: {
+     fontSize: 18,
+     fontWeight: '700',
+     color: '#880E4F',
+     marginTop: 10,
+   },
+   fullScreenSectionContainer: {
+     width: '100%',
+     height: '100%', // Make it take full available space
+     backgroundColor: 'rgba(255,255,255,0.95)',
+     borderRadius: 20,
+     padding: 20,
+   },
+   backButton: {
+     marginBottom: 15,
+     alignSelf: 'flex-start',
+   },
+   sectionHeader: {
+     fontSize: 28,
+     fontWeight: '800',
+     color: '#880E4F',
+     marginBottom: 20,
+     textAlign: 'center',
+   },
+   sectionSummaryDisplay: {
+     backgroundColor: 'rgba(194, 24, 91, 0.1)',
+     borderRadius: 12,
+     padding: 10,
+     marginBottom: 20,
+     alignItems: 'center',
+   },
+   sectionSummaryText: {
+     fontSize: 16,
+     color: '#880E4F',
+     fontWeight: '500',
+     marginVertical: 2,
+   },
+   sectionSummaryAmount: {
+     fontWeight: 'bold',
+     color: '#C2185B',
+   },
+   logoutText: {
+     color: '#880E4F',
+     fontWeight: 'bold',
+     fontSize: 16,
+   },
+   sectionContentScroll: {
+     flex: 1,
+     width: '100%',
+   },
+   rowContainer: { 
+     flexDirection: 'row', 
+     alignItems: 'center', 
+     marginBottom: 12 
+   },
+   memoryRowContainer: {
+     flexDirection: 'row',
+     alignItems: 'center',
+     marginBottom: 15,
+   },
+   smallInput: {
+     flex: 1,
+     backgroundColor: '#FCE4EC',
+     borderRadius: 12,
+     padding: 12,
+     marginRight: 8,
+     fontSize: 16,
+   },
+   largeInput: {
+     flex: 1,
+     backgroundColor: '#FCE4EC',
+     borderRadius: 12,
+     padding: 12,
+     marginRight: 8,
+     fontSize: 16,
+   },
+   memoryNoteInput: {
+     flex: 1,
+     backgroundColor: '#FCE4EC',
+     borderRadius: 12,
+     padding: 12,
+     marginHorizontal: 8,
+     fontSize: 16,
+     minHeight: 80,
+     textAlignVertical: 'top',
+   },
+   imagePickerContainer: {
+     width: 100,
+     height: 100,
+     borderRadius: 12,
+     overflow: 'hidden',
+   },
+   memoryImage: {
+     width: '100%',
+     height: '100%',
+     borderRadius: 12,
+   },
+   imagePlaceholder: {
+     width: '100%',
+     height: '100%',
+     backgroundColor: '#F8BBD0',
+     justifyContent: 'center',
+     alignItems: 'center',
+     borderRadius: 12,
+     borderWidth: 2,
+     borderColor: '#C2185B',
+     borderStyle: 'dashed',
+   },
+   imagePlaceholderText: {
+     color: '#880E4F',
+     fontSize: 12,
+     marginTop: 5,
+     textAlign: 'center',
+   },
+   addButton: {
+     marginTop: 10,
+     alignSelf: 'center',
+   },
+   reportsButton: {
+     backgroundColor: 'rgba(236, 64, 122, 0.8)',
+     paddingVertical: 12,
+     paddingHorizontal: 20,
+     borderRadius: 50,
+     alignItems: 'center',
+     marginBottom: 20
+   },
+   reportsLink: {
+     fontSize: 18,
+     color: '#fff',
+     fontWeight: '600',
+   },
+   reportYearContainer: {
+     marginBottom: 20,
+     backgroundColor: '#fff',
+     padding: 15,
+     borderRadius: 10,
+     elevation: 2,
+   },
+   reportYearHeader: {
+     fontSize: 22,
+     fontWeight: 'bold',
+     color: '#880E4F',
+     marginBottom: 10
+   },
+   reportMonthContainer: {
+     marginTop: 10,
+     marginLeft: 10,
+     borderLeftWidth: 3,
+     borderLeftColor: '#F48FB1',
+     paddingLeft: 10
+   },
+   reportMonthHeader: {
+     fontSize: 18,
+     fontWeight: '600',
+     color: '#C2185B'
+   },
+   reportSummaryText: {
+     fontSize: 16,
+     fontWeight: '500',
+     color: '#333',
+     marginBottom: 5
+   },
+   reportHighlightText: {
+     fontSize: 14,
+     fontWeight: '600',
+     color: '#AD1457',
+     marginTop: 4,
+     marginBottom: 2,
+     fontStyle: 'italic',
+   },
+   noDataText: {
+     textAlign: 'center',
+     marginTop: 40,
+     fontSize: 16,
+     color: '#880E4F',
+   },
+   welcomeContainer: {
+     flexDirection: 'row',
+     width: '100%',
+     justifyContent: 'space-between',
+     alignItems: 'center',
+     marginTop: 20,
+     marginBottom: 25,
+     paddingHorizontal: 5,
+   },
+   logoutIconButton: {
+     padding: 15,
+     borderRadius: 30,
+     backgroundColor: 'rgba(255, 255, 255, 0.8)',
+   },
+ });
+ 
+ export default PartnersScreen;
