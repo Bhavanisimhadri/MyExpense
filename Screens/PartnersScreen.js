@@ -10,10 +10,12 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
-  BackHandler
+  BackHandler,
+  Image
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import AsyncStorage from '@react-native-async-storage/async-storage'; // Import AsyncStorage
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { launchImageLibrary } from 'react-native-image-picker';
 import DatabaseHelper from '../Screens/DatabaseHelper';
 
 const PartnersScreen = ({ route, navigation }) => {
@@ -34,6 +36,9 @@ const PartnersScreen = ({ route, navigation }) => {
   // State for persistent data (not month-specific)
   const [notes, setNotes] = useState(['']);
   const [coupleGoals, setCoupleGoals] = useState([{ item: '', done: false }]);
+  
+  // New state for memories
+  const [memories, setMemories] = useState([{ image: null, note: '' }]);
 
   // State to hold all historical financial data for reports
   const [allFinancialData, setAllFinancialData] = useState({});
@@ -84,6 +89,9 @@ const PartnersScreen = ({ route, navigation }) => {
         const coupleGoalsData = await DatabaseHelper.getUserData(mobile, 'coupleGoals');
         setCoupleGoals(coupleGoalsData && coupleGoalsData.length > 0 ? coupleGoalsData : [{ item: '', done: false }]);
 
+        const memoriesData = await DatabaseHelper.getUserData(mobile, 'memories');
+        setMemories(memoriesData && memoriesData.length > 0 ? memoriesData : [{ image: null, note: '' }]);
+
         const allFinancials = await DatabaseHelper.getAllUserFinancialKeys(mobile, 'partner_financials');
         setAllFinancialData(allFinancials);
 
@@ -110,6 +118,7 @@ const PartnersScreen = ({ route, navigation }) => {
         await DatabaseHelper.saveUserData(mobile, financialDataKey, currentFinancials);
         await DatabaseHelper.saveUserData(mobile, 'partner_notes', notes);
         await DatabaseHelper.saveUserData(mobile, 'coupleGoals', coupleGoals);
+        await DatabaseHelper.saveUserData(mobile, 'memories', memories);
 
       } catch (error) {
         console.error("Failed to save data to database", error);
@@ -117,13 +126,12 @@ const PartnersScreen = ({ route, navigation }) => {
     };
 
     saveData();
-  }, [herMonthlyIncome, herSavings, hisMonthlyIncome, hisSavings, herExpenses, hisExpenses, notes, coupleGoals, mobile]);
-
+  }, [herMonthlyIncome, herSavings, hisMonthlyIncome, hisSavings, herExpenses, hisExpenses, notes, coupleGoals, memories, mobile]);
 
   // --- Calculation Logic ---
-
   const parseAmount = (amountStr) => {
-    const num = parseFloat(String(amountStr).replace(/[^0-9.-]+/g, ""));
+    if (typeof amountStr === 'number') return amountStr;
+    const num = parseFloat(String(amountStr || '').replace(/[^0-9.-]+/g, ""));
     return isNaN(num) ? 0 : num;
   };
 
@@ -179,14 +187,12 @@ const PartnersScreen = ({ route, navigation }) => {
     return { currentIncomeBalance: incomeRemaining, currentSavingsBalance: savingsRemaining };
   }, [herMonthlyIncome, hisMonthlyIncome, herSavings, hisSavings, totalHerExpenses, totalHisExpenses]);
 
-
   // --- Handlers ---
-
   const handleAddRow = (section) => {
-    if (section === 'herExpenses' && (!herExpenses[herExpenses.length - 1].element.trim() || !herExpenses[herExpenses.length - 1].amount.trim())) {
+    if (section === 'herExpenses' && (!herExpenses[herExpenses.length - 1].element.trim() || !herExpenses[herExpenses.length - 1].amount)) {
       Alert.alert("Validation Error", "Please fill in the current expense before adding a new one."); return;
     }
-    if (section === 'hisExpenses' && (!hisExpenses[hisExpenses.length - 1].element.trim() || !hisExpenses[hisExpenses.length - 1].amount.trim())) {
+    if (section === 'hisExpenses' && (!hisExpenses[hisExpenses.length - 1].element.trim() || !hisExpenses[hisExpenses.length - 1].amount)) {
       Alert.alert("Validation Error", "Please fill in the current expense before adding a new one."); return;
     }
     if (section === 'notes' && !notes[notes.length - 1].trim()) {
@@ -195,11 +201,15 @@ const PartnersScreen = ({ route, navigation }) => {
     if (section === 'coupleGoals' && !coupleGoals[coupleGoals.length - 1].item.trim()) {
       Alert.alert("Validation Error", "Please fill in the current 'Couple Goal' before adding a new one."); return;
     }
+    if (section === 'memories' && (!memories[memories.length - 1].note.trim() && !memories[memories.length - 1].image)) {
+      Alert.alert("Validation Error", "Please add an image or note before adding a new memory."); return;
+    }
 
     if (section === 'herExpenses') setHerExpenses([...herExpenses, { element: '', amount: '' }]);
     if (section === 'hisExpenses') setHisExpenses([...hisExpenses, { element: '', amount: '' }]);
     if (section === 'notes') setNotes([...notes, '']);
     if (section === 'coupleGoals') setCoupleGoals([...coupleGoals, { item: '', done: false }]);
+    if (section === 'memories') setMemories([...memories, { image: null, note: '' }]);
   };
 
   const handleRemoveRow = (section, index) => {
@@ -207,6 +217,7 @@ const PartnersScreen = ({ route, navigation }) => {
     if (section === 'hisExpenses') setHisExpenses(hisExpenses.filter((_, i) => i !== index));
     if (section === 'notes') setNotes(notes.filter((_, i) => i !== index));
     if (section === 'coupleGoals') setCoupleGoals(coupleGoals.filter((_, i) => i !== index));
+    if (section === 'memories') setMemories(memories.filter((_, i) => i !== index));
   };
 
   const handleInputChange = (section, index, field, value) => {
@@ -214,6 +225,7 @@ const PartnersScreen = ({ route, navigation }) => {
     if (section === 'hisExpenses') { const updated = [...hisExpenses]; updated[index][field] = value; setHisExpenses(updated); }
     if (section === 'notes') { const updated = [...notes]; updated[index] = value; setNotes(updated); }
     if (section === 'coupleGoals') { const updated = [...coupleGoals]; updated[index].item = value; setCoupleGoals(updated); }
+    if (section === 'memories') { const updated = [...memories]; updated[index][field] = value; setMemories(updated); }
   };
 
   const toggleDone = (index) => {
@@ -238,8 +250,31 @@ const PartnersScreen = ({ route, navigation }) => {
     ]);
   };
 
-  // --- Render Functions ---
+  // --- Image Picker Handler ---
+  const handleImagePick = (index) => {
+    const options = {
+      mediaType: 'photo',
+      includeBase64: false,
+      maxHeight: 2000,
+      maxWidth: 2000,
+    };
 
+    launchImageLibrary(options, (response) => {
+      if (response.didCancel) {
+        console.log('User cancelled image picker');
+      } else if (response.error) {
+        console.log('ImagePicker Error: ', response.error);
+        Alert.alert("Error", "Failed to pick image. Ensure you have granted permissions.");
+      } else if (response.assets && response.assets.length > 0) {
+        const imageUri = response.assets[0].uri;
+        const updatedMemories = [...memories];
+        updatedMemories[index].image = imageUri;
+        setMemories(updatedMemories);
+      }
+    });
+  };
+
+  // --- Render Functions ---
   const renderExpenseRow = (data, section) => (
     <ScrollView style={styles.sectionContentScroll}>
       {data.map((row, index) => (
@@ -261,7 +296,12 @@ const PartnersScreen = ({ route, navigation }) => {
     <ScrollView style={styles.sectionContentScroll}>
       {data.map((item, index) => (
         <View key={index} style={styles.rowContainer}>
-          <TextInput style={styles.largeInput} placeholder={section === 'notes' ? "Note" : "Couple Goal"} value={section === 'notes' ? item : item.item} onChangeText={(val) => handleInputChange(section, index, 'item', val)} />
+          <TextInput 
+            style={styles.largeInput} 
+            placeholder={section === 'notes' ? "Note" : "Couple Goal"} 
+            value={section === 'notes' ? item : item.item} 
+            onChangeText={(val) => handleInputChange(section, index, section === 'notes' ? null : 'item', val)} 
+          />
           {section === 'coupleGoals' ? (
             <TouchableOpacity onPress={() => toggleDone(index)}>
               <Ionicons name={item.done ? "heart" : "heart-outline"} size={28} color="#C2185B" />
@@ -279,129 +319,104 @@ const PartnersScreen = ({ route, navigation }) => {
     </ScrollView>
   );
 
+  const renderMemoriesRow = () => (
+    <ScrollView style={styles.sectionContentScroll}>
+      {memories.map((memory, index) => (
+        <View key={index} style={styles.memoryRowContainer}>
+          <TouchableOpacity 
+            style={styles.imagePickerContainer}
+            onPress={() => handleImagePick(index)}
+          >
+            {memory.image ? (
+              <Image source={{ uri: memory.image }} style={styles.memoryImage} />
+            ) : (
+              <View style={styles.imagePlaceholder}>
+                <Ionicons name="camera-outline" size={40} color="#C2185B" />
+                <Text style={styles.imagePlaceholderText}>Add Photo</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+          <TextInput 
+            style={styles.memoryNoteInput} 
+            placeholder="Memory note..." 
+            value={memory.note}
+            onChangeText={(val) => handleInputChange('memories', index, 'note', val)}
+            multiline
+          />
+          <TouchableOpacity onPress={() => handleRemoveRow('memories', index)}>
+            <Ionicons name="remove-circle-outline" size={28} color="#D81B60" />
+          </TouchableOpacity>
+        </View>
+      ))}
+      <TouchableOpacity style={styles.addButton} onPress={() => handleAddRow('memories')}>
+        <Ionicons name="add-circle" size={30} color="#AD1457" />
+      </TouchableOpacity>
+    </ScrollView>
+  );
+  
+  // FIX: Implemented the missing renderReports function
   const renderReports = () => {
-    const yearlyReports = {};
+    const monthNames = ["", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    
+    // Group data by year
+    const reportsByYear = Object.keys(allFinancialData).reduce((acc, key) => {
+      const parts = key.split('_');
+      const year = parts[2];
+      const month = parseInt(parts[3], 10);
+      const data = allFinancialData[key];
 
-    Object.keys(allFinancialData).forEach(key => {
-        const parts = key.split('_');
-        if (parts.length < 4) return;
-        const year = parts[2];
-        const month = parts[3];
+      if (!acc[year]) {
+        acc[year] = [];
+      }
+      
+      // Calculate totals for this month's data
+      const totalHerExp = (data.herExpenses || []).reduce((sum, item) => sum + parseAmount(item.amount), 0);
+      const totalHisExp = (data.hisExpenses || []).reduce((sum, item) => sum + parseAmount(item.amount), 0);
+      const totalIncome = parseAmount(data.herMonthlyIncome) + parseAmount(data.hisMonthlyIncome);
+      const totalSavings = parseAmount(data.herSavings) + parseAmount(data.hisSavings);
 
-        if (!yearlyReports[year]) {
-            yearlyReports[year] = {
-                months: {},
-                totalSpent: 0,
-                totalHerSpent: 0,
-                totalHisSpent: 0,
-                totalIncome: 0,
-                totalSavings: 0
-            };
-        }
+      acc[year].push({
+        month,
+        monthName: monthNames[month],
+        totalIncome,
+        totalSavings,
+        totalExpenses: totalHerExp + totalHisExp,
+      });
 
-        const data = allFinancialData[key];
-        if (!data) return;
+      return acc;
+    }, {});
 
-        const monthlyHerExpenses = (data.herExpenses || []).reduce((sum, item) => sum + parseAmount(item.amount), 0);
-        const monthlyHisExpenses = (data.hisExpenses || []).reduce((sum, item) => sum + parseAmount(item.amount), 0);
-        const monthlySpent = monthlyHerExpenses + monthlyHisExpenses;
-        const monthlyIncomeVal = parseAmount(data.herMonthlyIncome) + parseAmount(data.hisMonthlyIncome);
-        const monthlySavingsVal = parseAmount(data.herSavings) + parseAmount(data.hisSavings);
-        const effectiveIncome = monthlyIncomeVal - monthlySavingsVal;
-        const overspend = Math.max(0, monthlySpent - effectiveIncome);
-
-        yearlyReports[year].months[month] = {
-            income: monthlyIncomeVal,
-            savings: monthlySavingsVal,
-            totalSpent: monthlySpent,
-            herSpent: monthlyHerExpenses,
-            hisSpent: monthlyHisExpenses,
-            remainingSavings: monthlySavingsVal - overspend,
-            herExpenses: data.herExpenses || [],
-            hisExpenses: data.hisExpenses || [],
-        };
-
-        yearlyReports[year].totalSpent += monthlySpent;
-        yearlyReports[year].totalHerSpent += monthlyHerExpenses;
-        yearlyReports[year].totalHisSpent += monthlyHisExpenses;
-        yearlyReports[year].totalIncome += monthlyIncomeVal;
-        yearlyReports[year].totalSavings += monthlySavingsVal;
-    });
-
-    const getSpendingAnalysis = (expenses) => {
-        const validExpenses = expenses.filter(item => item.element && parseAmount(item.amount) > 0);
-        let mostSpentText = null;
-        let leastSpentText = null;
-
-        if (validExpenses.length > 0) {
-            const sortedExpenses = [...validExpenses].sort((a, b) => parseAmount(b.amount) - parseAmount(a.amount));
-            const mostSpentItem = sortedExpenses[0];
-            const leastSpentItem = sortedExpenses[sortedExpenses.length - 1];
-            mostSpentText = `Most spent on: ${mostSpentItem.element} ($${parseAmount(mostSpentItem.amount).toFixed(2)})`;
-            if (sortedExpenses.length > 1 && parseAmount(mostSpentItem.amount) !== parseAmount(leastSpentItem.amount)) {
-                leastSpentText = `Least spent on: ${leastSpentItem.element} ($${parseAmount(leastSpentItem.amount).toFixed(2)})`;
-            }
-        }
-        return { mostSpentText, leastSpentText };
-    };
+    // Sort years descending
+    const sortedYears = Object.keys(reportsByYear).sort((a, b) => b - a);
 
     return (
-        <View style={styles.fullScreenSectionContainer}>
-            <TouchableOpacity onPress={() => setShowReports(false)} style={styles.backButton}>
-                <Ionicons name="arrow-back" size={30} color="#C2185B" />
-            </TouchableOpacity>
-            <Text style={styles.sectionHeader}>Financial Overview</Text>
-            <ScrollView>
-                {Object.keys(yearlyReports).length === 0 ? (
-                    <Text style={styles.noDataText}>
-                        No financial data to display. Start by adding income and expenses!
-                    </Text>
-                ) : (
-                    Object.keys(yearlyReports).sort((a, b) => b - a).map(year => (
-                        <View key={year} style={styles.reportYearContainer}>
-                            <Text style={styles.reportYearHeader}>{year}</Text>
-                            <Text style={styles.reportSummaryText}>Yearly Income: ${yearlyReports[year].totalIncome.toFixed(2)}</Text>
-                            <Text style={styles.reportSummaryText}>Yearly Savings: ${yearlyReports[year].totalSavings.toFixed(2)}</Text>
-                            <Text style={styles.reportSummaryText}>Yearly Spent (Her): ${yearlyReports[year].totalHerSpent.toFixed(2)}</Text>
-                            <Text style={styles.reportSummaryText}>Yearly Spent (His): ${yearlyReports[year].totalHisSpent.toFixed(2)}</Text>
-
-                            {coupleGoals.filter(item => item.done).length > 0 && (
-                                <View style={{ marginTop: 5 }}>
-                                    <Text style={styles.reportHighlightText}>Accomplished Couple Goals:</Text>
-                                    {coupleGoals.filter(item => item.done).map((item, index) => (
-                                        <Text key={index} style={styles.reportHighlightText}>- {item.item}</Text>
-                                    ))}
-                                </View>
-                            )}
-
-                            {Object.keys(yearlyReports[year].months).sort((a, b) => b - a).map(month => {
-                                const monthData = yearlyReports[year].months[month];
-                                const herSpending = getSpendingAnalysis(monthData.herExpenses);
-                                const hisSpending = getSpendingAnalysis(monthData.hisExpenses);
-
-                                return (
-                                    <View key={month} style={styles.reportMonthContainer}>
-                                        <Text style={styles.reportMonthHeader}>{new Date(year, month - 1).toLocaleString('default', { month: 'long' })}</Text>
-                                        <Text>Combined Income: ${monthData.income.toFixed(2)}</Text>
-                                        <Text>Initial Savings: ${monthData.savings.toFixed(2)}</Text>
-                                        <Text>Her Total Spent: ${monthData.herSpent.toFixed(2)}</Text>
-                                        {herSpending.mostSpentText && <Text style={styles.reportHighlightText}>{herSpending.mostSpentText}</Text>}
-                                        {herSpending.leastSpentText && <Text style={styles.reportHighlightText}>{herSpending.leastSpentText}</Text>}
-                                        <Text>His Total Spent: ${monthData.hisSpent.toFixed(2)}</Text>
-                                        {hisSpending.mostSpentText && <Text style={styles.reportHighlightText}>{hisSpending.mostSpentText}</Text>}
-                                        {hisSpending.leastSpentText && <Text style={styles.reportHighlightText}>{hisSpending.leastSpentText}</Text>}
-                                        <Text>Remaining Savings: ${monthData.remainingSavings.toFixed(2)}</Text>
-                                    </View>
-                                );
-                            })}
-                        </View>
-                    ))
-                )}
-            </ScrollView>
-        </View>
+      <View style={styles.fullScreenSectionContainer}>
+        <TouchableOpacity onPress={() => setShowReports(false)} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={30} color="#C2185B" />
+        </TouchableOpacity>
+        <Text style={styles.sectionHeader}>Financial Reports</Text>
+        <ScrollView>
+          {sortedYears.length > 0 ? (
+            sortedYears.map(year => (
+              <View key={year} style={styles.reportYearContainer}>
+                <Text style={styles.reportYearHeader}>{year}</Text>
+                {reportsByYear[year].sort((a,b) => b.month - a.month).map(monthData => (
+                  <View key={monthData.month} style={styles.reportMonthContainer}>
+                    <Text style={styles.reportMonthHeader}>{monthData.monthName}</Text>
+                    <Text style={styles.reportSummaryText}>Total Income: ${monthData.totalIncome.toFixed(2)}</Text>
+                    <Text style={styles.reportSummaryText}>Total Savings: ${monthData.totalSavings.toFixed(2)}</Text>
+                    <Text style={styles.reportHighlightText}>Total Expenses: ${monthData.totalExpenses.toFixed(2)}</Text>
+                  </View>
+                ))}
+              </View>
+            ))
+          ) : (
+            <Text style={styles.noDataText}>No financial data recorded yet.</Text>
+          )}
+        </ScrollView>
+      </View>
     );
-};
-
+  };
 
   return (
     <ImageBackground
@@ -423,12 +438,12 @@ const PartnersScreen = ({ route, navigation }) => {
             <>
               <View style={styles.incomeInputContainer}>
                 <View style={styles.partnerIncomeContainer}>
-                  <TextInput style={styles.input} placeholder="Her Monthly Income" placeholderTextColor="#666" keyboardType="numeric" value={herMonthlyIncome} onChangeText={setHerMonthlyIncome} />
-                  <TextInput style={styles.input} placeholder="Her Savings" placeholderTextColor="#666" keyboardType="numeric" value={herSavings} onChangeText={setHerSavings} />
+                  <TextInput style={styles.input} placeholder="Her Monthly Income" placeholderTextColor="#666" keyboardType="numeric" value={String(herMonthlyIncome)} onChangeText={setHerMonthlyIncome} />
+                  <TextInput style={styles.input} placeholder="Her Savings" placeholderTextColor="#666" keyboardType="numeric" value={String(herSavings)} onChangeText={setHerSavings} />
                 </View>
                 <View style={styles.partnerIncomeContainer}>
-                  <TextInput style={styles.input} placeholder="His Monthly Income" placeholderTextColor="#666" keyboardType="numeric" value={hisMonthlyIncome} onChangeText={setHisMonthlyIncome} />
-                  <TextInput style={styles.input} placeholder="His Savings" placeholderTextColor="#666" keyboardType="numeric" value={hisSavings} onChangeText={setHisSavings} />
+                  <TextInput style={styles.input} placeholder="His Monthly Income" placeholderTextColor="#666" keyboardType="numeric" value={String(hisMonthlyIncome)} onChangeText={setHisMonthlyIncome} />
+                  <TextInput style={styles.input} placeholder="His Savings" placeholderTextColor="#666" keyboardType="numeric" value={String(hisSavings)} onChangeText={setHisSavings} />
                 </View>
               </View>
               <TouchableOpacity onPress={() => setShowReports(true)} style={styles.reportsButton}>
@@ -451,6 +466,10 @@ const PartnersScreen = ({ route, navigation }) => {
                   <Ionicons name="document-text-outline" size={50} color="#C2185B" />
                   <Text style={styles.sectionText}>Notes</Text>
                 </TouchableOpacity>
+                <TouchableOpacity style={styles.sectionCard} onPress={() => setSelectedSection('memories')}>
+                  <Ionicons name="images-outline" size={50} color="#C2185B" />
+                  <Text style={styles.sectionText}>Memories</Text>
+                </TouchableOpacity>
               </View>
             </>
           ) : (
@@ -463,6 +482,7 @@ const PartnersScreen = ({ route, navigation }) => {
                 {selectedSection === 'hisExpenses' && "His Expenses"}
                 {selectedSection === 'coupleGoals' && "Couple Goals"}
                 {selectedSection === 'notes' && "Notes"}
+                {selectedSection === 'memories' && "Memories"}
               </Text>
               <View style={styles.sectionSummaryDisplay}>
                 {selectedSection === 'herExpenses' && (
@@ -477,7 +497,7 @@ const PartnersScreen = ({ route, navigation }) => {
                     <Text style={styles.sectionSummaryText}>His Remaining Savings: <Text style={styles.sectionSummaryAmount}>${hisSavingsBalance.toFixed(2)}</Text></Text>
                   </>
                 )}
-                {(selectedSection === 'coupleGoals' || selectedSection === 'notes') && (
+                {(selectedSection === 'coupleGoals' || selectedSection === 'notes' || selectedSection === 'memories') && (
                   <>
                     <Text style={styles.sectionSummaryText}>Combined Remaining Income: <Text style={styles.sectionSummaryAmount}>${currentIncomeBalance.toFixed(2)}</Text></Text>
                     <Text style={styles.sectionSummaryText}>Combined Remaining Savings: <Text style={styles.sectionSummaryAmount}>${currentSavingsBalance.toFixed(2)}</Text></Text>
@@ -488,6 +508,7 @@ const PartnersScreen = ({ route, navigation }) => {
               {selectedSection === 'hisExpenses' && renderExpenseRow(hisExpenses, 'hisExpenses')}
               {selectedSection === 'coupleGoals' && renderGoalsOrNotesRow(coupleGoals, 'coupleGoals')}
               {selectedSection === 'notes' && renderGoalsOrNotesRow(notes, 'notes')}
+              {selectedSection === 'memories' && renderMemoriesRow()}
             </View>
           )}
         </ScrollView>
@@ -497,7 +518,7 @@ const PartnersScreen = ({ route, navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  background: { flex: 1, width: '100%', height: '100%', backgroundColor: '#FCE4EC' },
+ background: { flex: 1, width: '100%', height: '100%', backgroundColor: '#FCE4EC' },
   keyboardAvoidingContainer: { flex: 1 },
   container: {
     paddingVertical: 40,
@@ -510,8 +531,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#880E4F',
     textAlign: 'center',
-    width: 200,
-    marginBottom: 10,
+    flexShrink: 1, // Allow text to shrink if needed
   },
   incomeInputContainer: {
     width: '100%',
@@ -559,11 +579,10 @@ const styles = StyleSheet.create({
   },
   fullScreenSectionContainer: {
     width: '100%',
-    flex: 1,
+    height: '100%', // Make it take full available space
     backgroundColor: 'rgba(255,255,255,0.95)',
     borderRadius: 20,
     padding: 20,
-    marginTop: -10,
   },
   backButton: {
     marginBottom: 15,
@@ -601,9 +620,17 @@ const styles = StyleSheet.create({
   sectionContentScroll: {
     flex: 1,
     width: '100%',
-    maxHeight: '70%',
   },
-  rowContainer: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  rowContainer: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    marginBottom: 12 
+  },
+  memoryRowContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
   smallInput: {
     flex: 1,
     backgroundColor: '#FCE4EC',
@@ -619,6 +646,44 @@ const styles = StyleSheet.create({
     padding: 12,
     marginRight: 8,
     fontSize: 16,
+  },
+  memoryNoteInput: {
+    flex: 1,
+    backgroundColor: '#FCE4EC',
+    borderRadius: 12,
+    padding: 12,
+    marginHorizontal: 8,
+    fontSize: 16,
+    minHeight: 80,
+    textAlignVertical: 'top',
+  },
+  imagePickerContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  memoryImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 12,
+  },
+  imagePlaceholder: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#F8BBD0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#C2185B',
+    borderStyle: 'dashed',
+  },
+  imagePlaceholderText: {
+    color: '#880E4F',
+    fontSize: 12,
+    marginTop: 5,
+    textAlign: 'center',
   },
   addButton: {
     marginTop: 10,
