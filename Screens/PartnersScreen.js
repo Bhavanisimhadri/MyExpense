@@ -15,7 +15,7 @@ import {
   Image
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+
 import { launchImageLibrary } from 'react-native-image-picker';
 import DatabaseHelper from '../Screens/DatabaseHelper';
 
@@ -255,7 +255,7 @@ const handleRemoveRow = (section, index) => {
         text: "Logout",
         onPress: async () => {
           try {
-            await AsyncStorage.removeItem('userToken'); 
+      
             navigation.navigate('Login');
           } catch (e) {
             console.error("Logout error:", e);

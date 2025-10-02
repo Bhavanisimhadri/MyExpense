@@ -16,10 +16,10 @@ import {
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { launchImageLibrary } from 'react-native-image-picker';
 import DatabaseHelper from '../Screens/DatabaseHelper'; // Assuming DatabaseHelper is in this path
-
+import { BackHandler } from 'react-native';
 // --- Main FriendsScreen Component ---
-const FriendsScreen = ({ route }) => {
-  const { mobile } = route.params; 
+const FriendsScreen = ({ route, navigation }) => {
+  const { mobile } = route.params;
 
   // --- State Management ---
   const [selectedSection, setSelectedSection] = useState(null);
@@ -30,6 +30,26 @@ const FriendsScreen = ({ route }) => {
   const [goals, setGoals] = useState([{ id: Date.now(), item: '', done: false }]);
   const [memories, setMemories] = useState([{ id: Date.now(), image: null, note: '' }]);
   const [modalVisible, setModalVisible] = useState(false);
+  useEffect(() => {
+    const backAction = () => {
+      Alert.alert(
+        "Exit App",
+        "Are you sure you want to exit?",
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Yes", onPress: () => BackHandler.exitApp() }
+        ]
+      );
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      backAction
+    );
+
+    return () => backHandler.remove();
+  }, []);
 
   // --- Data Persistence ---
   useEffect(() => {
@@ -40,7 +60,7 @@ const FriendsScreen = ({ route }) => {
 
         const eventsData = await DatabaseHelper.getUserData(mobile, 'friends_events');
         if (eventsData) setEvents(eventsData);
-        
+
         const tripsData = await DatabaseHelper.getUserData(mobile, 'friends_trips');
         if (tripsData) setTrips(tripsData);
 
@@ -78,13 +98,13 @@ const FriendsScreen = ({ route }) => {
   const handleFriendNameChange = (id, name) => {
     setFriends(friends.map(f => f.id === id ? { ...f, name } : f));
   };
-  
+
   const createNewPlan = (type) => {
     const newPlan = { id: Date.now(), name: '', amount: '', roles: '', date: new Date().toISOString() };
     if (type === 'events') setEvents([newPlan, ...events]);
     if (type === 'trips') setTrips([newPlan, ...trips]);
   };
-  
+
   const updatePlan = (type, id, field, value) => {
     const updater = (plans) => plans.map(p => p.id === id ? { ...p, [field]: value } : p);
     if (type === 'events') setEvents(updater);
@@ -95,7 +115,7 @@ const FriendsScreen = ({ route }) => {
     if (type === 'events') setEvents(events.filter(p => p.id !== id));
     if (type === 'trips') setTrips(trips.filter(p => p.id !== id));
   };
-  
+
   const handleAddRow = (section) => {
     if (section === 'goals') setGoals([...goals, { id: Date.now(), item: '', done: false }]);
     if (section === 'memories') setMemories([...memories, { id: Date.now(), image: null, note: '' }]);
@@ -124,6 +144,7 @@ const FriendsScreen = ({ route }) => {
       }
     });
   };
+
 
   // --- Render Functions ---
 
@@ -188,394 +209,436 @@ const FriendsScreen = ({ route }) => {
       </View>
     );
   };
-  
+
   const renderMemories = () => (
-     <View style={styles.fullScreenSectionContainer}>
-        <TouchableOpacity onPress={() => setSelectedSection(null)} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={30} color="#5A2E18" />
-        </TouchableOpacity>
-        <Text style={styles.sectionHeader}>Memories</Text>
-        <ScrollView>
-          {memories.map((memory) => (
-            <View key={memory.id} style={styles.memoryRowContainer}>
-              <TouchableOpacity style={styles.imagePickerContainer} onPress={() => handleImagePick(memory.id)}>
-                {memory.image ? (
-                  <Image source={{ uri: memory.image }} style={styles.memoryImage} />
-                ) : (
-                  <View style={styles.imagePlaceholder}>
-                    <Ionicons name="camera-outline" size={40} color="#5A2E18" />
-                    <Text style={styles.imagePlaceholderText}>Add Photo</Text>
-                  </View>
-                )}
-              </TouchableOpacity>
-              <TextInput style={styles.memoryNoteInput} placeholder="Memory note..." value={memory.note} onChangeText={(val) => handleInputChange('memories', memory.id, val)} multiline />
-              <TouchableOpacity onPress={() => handleRemoveRow('memories', memory.id)}>
-                <Ionicons name="remove-circle-outline" size={28} color="#A52A2A" />
-              </TouchableOpacity>
-            </View>
-          ))}
-          <TouchableOpacity style={styles.addButton} onPress={() => handleAddRow('memories')}>
-            <Ionicons name="add-circle" size={30} color="#5A2E18" />
-            <Text style={styles.addButtonText}>Add Memory</Text>
-          </TouchableOpacity>
-        </ScrollView>
-     </View>
-   );
-
-   const renderGoals = () => (
-     <View style={styles.fullScreenSectionContainer}>
-        <TouchableOpacity onPress={() => setSelectedSection(null)} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={30} color="#5A2E18" />
-        </TouchableOpacity>
-        <Text style={styles.sectionHeader}>Group Goals</Text>
-        <ScrollView>
-          {goals.map((goal) => (
-            <View key={goal.id} style={styles.rowContainer}>
-              <TouchableOpacity onPress={() => toggleGoalDone(goal.id)}>
-                <Ionicons name={goal.done ? "checkbox" : "square-outline"} size={28} color="#5A2E18" />
-              </TouchableOpacity>
-              <TextInput style={[styles.largeInput, { textDecorationLine: goal.done ? 'line-through' : 'none', marginLeft: 10 }]} placeholder="Group Goal" value={goal.item} onChangeText={(val) => handleInputChange('goals', goal.id, val)} />
-              <TouchableOpacity onPress={() => handleRemoveRow('goals', goal.id)}>
-                <Ionicons name="remove-circle-outline" size={28} color="#A52A2A" />
-              </TouchableOpacity>
-            </View>
-          ))}
-          <TouchableOpacity style={styles.addButton} onPress={() => handleAddRow('goals')}>
-            <Ionicons name="add-circle" size={30} color="#5A2E18" />
-            <Text style={styles.addButtonText}>Add Goal</Text>
-          </TouchableOpacity>
-        </ScrollView>
-     </View>
-   );
-
-   const renderReports = () => {
-  const yearlyReports = {};
-  const allPlans = [...events, ...trips];
-
-  // --- Existing Events & Trips Report ---
-  allPlans.forEach(plan => {
-    const date = new Date(plan.date);
-    const year = date.getFullYear();
-    const month = date.getMonth();
-
-    if (!yearlyReports[year]) {
-      yearlyReports[year] = {
-        yearlyTrips: 0,
-        yearlyParties: 0,
-        totalAmount: 0,
-        months: Array(12).fill(null).map(() => ({
-          monthlyTrips: 0,
-          monthlyParties: 0,
-          monthlyAmount: 0,
-          mostSpentOn: null,
-          leastSpentOn: null,
-        })),
-        goals: { total: 0, completed: 0, pending: 0, list: [] }, // NEW
-      };
-    }
-
-    const planAmount = parseFloat(plan.amount) || 0;
-
-    if (trips.some(t => t.id === plan.id)) {
-      yearlyReports[year].yearlyTrips++;
-      yearlyReports[year].months[month].monthlyTrips++;
-    } else {
-      yearlyReports[year].yearlyParties++;
-      yearlyReports[year].months[month].monthlyParties++;
-    }
-
-    yearlyReports[year].totalAmount += planAmount;
-    yearlyReports[year].months[month].monthlyAmount += planAmount;
-
-    if (
-      !yearlyReports[year].months[month].mostSpentOn ||
-      planAmount > yearlyReports[year].months[month].mostSpentOn.amount
-    ) {
-      yearlyReports[year].months[month].mostSpentOn = { name: plan.name, amount: planAmount };
-    }
-
-    if (
-      !yearlyReports[year].months[month].leastSpentOn ||
-      planAmount < yearlyReports[year].months[month].leastSpentOn.amount
-    ) {
-      yearlyReports[year].months[month].leastSpentOn = { name: plan.name, amount: planAmount };
-    }
-  });
-
-  // --- NEW: Group Goals Report by Year ---
-  goals.forEach(goal => {
-    const createdAt = goal.id ? new Date(goal.id) : new Date(); // using id timestamp as proxy
-    const year = createdAt.getFullYear();
-
-    if (!yearlyReports[year]) {
-      yearlyReports[year] = {
-        yearlyTrips: 0,
-        yearlyParties: 0,
-        totalAmount: 0,
-        months: Array(12).fill(null).map(() => ({
-          monthlyTrips: 0,
-          monthlyParties: 0,
-          monthlyAmount: 0,
-          mostSpentOn: null,
-          leastSpentOn: null,
-        })),
-        goals: { total: 0, completed: 0, pending: 0, list: [] },
-      };
-    }
-
-    yearlyReports[year].goals.total++;
-    if (goal.done) {
-      yearlyReports[year].goals.completed++;
-    } else {
-      yearlyReports[year].goals.pending++;
-    }
-    yearlyReports[year].goals.list.push(goal);
-  });
-
-  return (
     <View style={styles.fullScreenSectionContainer}>
-      <TouchableOpacity onPress={() => setShowReports(false)} style={styles.backButton}>
+      <TouchableOpacity onPress={() => setSelectedSection(null)} style={styles.backButton}>
         <Ionicons name="arrow-back" size={30} color="#5A2E18" />
       </TouchableOpacity>
-      <Text style={styles.sectionHeader}>Reports</Text>
-      <ScrollView contentContainerStyle={{ padding: 10 }}>
-        {Object.keys(yearlyReports).map(year => (
-          <View key={year} style={styles.reportCard}>
-            <Text style={styles.reportTitle}>{year} Report</Text>
-            <Text style={styles.reportText}>Yearly Trips: {yearlyReports[year].yearlyTrips}</Text>
-            <Text style={styles.reportText}>Yearly Parties: {yearlyReports[year].yearlyParties}</Text>
-            <Text style={styles.reportHighlight}>
-              Yearly Total Spent: ${yearlyReports[year].totalAmount.toFixed(2)}
-            </Text>
-
-            {/* --- NEW GOALS REPORT --- */}
-            
-            <Text style={[styles.reportText,
-              { fontWeight: 'bold',fontStyle:'italic', marginTop: 10 }
-            ]}>Accomplished Group goals</Text>
-           
-            {yearlyReports[year].goals.list.length > 0 && (
-              <View style={{ marginTop: 5 }}>
-                {yearlyReports[year].goals.list.map(g => (
-                  <Text
-                    key={g.id}
-                    style={{
-                      fontSize: 14,
-                      marginBottom: 5,
-                      color: g.done ? 'green' : '#A52A2A',
-                     
-                    }}
-                  >
-                    • {g.item || "Untitled Goal"}
-                  </Text>
-                ))}
-              </View>
-            )}
-
-            {/* --- Existing Monthly Reports --- */}
-            {yearlyReports[year].months.map((monthData, monthIndex) => {
-              if (monthData.monthlyAmount > 0) {
-                return (
-                  <View key={monthIndex} style={styles.monthlyReportCard}>
-                    <Text style={styles.monthlyReportTitle}>
-                      {new Date(year, monthIndex).toLocaleString('default', { month: 'long' })}
-                    </Text>
-                    <Text style={styles.reportText}>Monthly Trips: {monthData.monthlyTrips}</Text>
-                    <Text style={styles.reportText}>Monthly Parties: {monthData.monthlyParties}</Text>
-                    <Text style={styles.reportText}>
-                      Monthly Amount Spent: ${monthData.monthlyAmount.toFixed(2)}
-                    </Text>
-                    {monthData.mostSpentOn && (
-                      <Text style={styles.reportText}>
-                        Most Spent On: {monthData.mostSpentOn.name} ($
-                        {monthData.mostSpentOn.amount.toFixed(2)})
-                      </Text>
-                    )}
-                    {monthData.leastSpentOn && (
-                      <Text style={styles.reportText}>
-                        Least Spent On: {monthData.leastSpentOn.name} ($
-                        {monthData.leastSpentOn.amount.toFixed(2)})
-                      </Text>
-                    )}
-                  </View>
-                );
-              }
-              return null;
-            })}
+      <Text style={styles.sectionHeader}>Memories</Text>
+      <ScrollView>
+        {memories.map((memory) => (
+          <View key={memory.id} style={styles.memoryRowContainer}>
+            <TouchableOpacity style={styles.imagePickerContainer} onPress={() => handleImagePick(memory.id)}>
+              {memory.image ? (
+                <Image source={{ uri: memory.image }} style={styles.memoryImage} />
+              ) : (
+                <View style={styles.imagePlaceholder}>
+                  <Ionicons name="camera-outline" size={40} color="#5A2E18" />
+                  <Text style={styles.imagePlaceholderText}>Add Photo</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+            <TextInput style={styles.memoryNoteInput} placeholder="Memory note..." value={memory.note} onChangeText={(val) => handleInputChange('memories', memory.id, val)} multiline />
+            <TouchableOpacity onPress={() => handleRemoveRow('memories', memory.id)}>
+              <Ionicons name="remove-circle-outline" size={28} color="#A52A2A" />
+            </TouchableOpacity>
           </View>
         ))}
+        <TouchableOpacity style={styles.addButton} onPress={() => handleAddRow('memories')}>
+          <Ionicons name="add-circle" size={30} color="#5A2E18" />
+          <Text style={styles.addButtonText}>Add Memory</Text>
+        </TouchableOpacity>
       </ScrollView>
     </View>
   );
-};
 
-  
+  const renderGoals = () => (
+    <View style={styles.fullScreenSectionContainer}>
+      <TouchableOpacity onPress={() => setSelectedSection(null)} style={styles.backButton}>
+        <Ionicons name="arrow-back" size={30} color="#5A2E18" />
+      </TouchableOpacity>
+      <Text style={styles.sectionHeader}>Group Goals</Text>
+      <ScrollView>
+        {goals.map((goal) => (
+          <View key={goal.id} style={styles.rowContainer}>
+            <TouchableOpacity onPress={() => toggleGoalDone(goal.id)}>
+              <Ionicons name={goal.done ? "checkbox" : "square-outline"} size={28} color="#5A2E18" />
+            </TouchableOpacity>
+            <TextInput style={[styles.largeInput, { textDecorationLine: goal.done ? 'line-through' : 'none', marginLeft: 10 }]} placeholder="Group Goal" value={goal.item} onChangeText={(val) => handleInputChange('goals', goal.id, val)} />
+            <TouchableOpacity onPress={() => handleRemoveRow('goals', goal.id)}>
+              <Ionicons name="remove-circle-outline" size={28} color="#A52A2A" />
+            </TouchableOpacity>
+          </View>
+        ))}
+        <TouchableOpacity style={styles.addButton} onPress={() => handleAddRow('goals')}>
+          <Ionicons name="add-circle" size={30} color="#5A2E18" />
+          <Text style={styles.addButtonText}>Add Goal</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </View>
+  );
+
+  const renderReports = () => {
+    const yearlyReports = {};
+    const allPlans = [...events, ...trips];
+
+    // --- Existing Events & Trips Report ---
+    allPlans.forEach(plan => {
+      const date = new Date(plan.date);
+      const year = date.getFullYear();
+      const month = date.getMonth();
+
+      if (!yearlyReports[year]) {
+        yearlyReports[year] = {
+          yearlyTrips: 0,
+          yearlyParties: 0,
+          totalAmount: 0,
+          months: Array(12).fill(null).map(() => ({
+            monthlyTrips: 0,
+            monthlyParties: 0,
+            monthlyAmount: 0,
+            mostSpentOn: null,
+            leastSpentOn: null,
+          })),
+          goals: { total: 0, completed: 0, pending: 0, list: [] }, // NEW
+        };
+      }
+
+      const planAmount = parseFloat(plan.amount) || 0;
+
+      if (trips.some(t => t.id === plan.id)) {
+        yearlyReports[year].yearlyTrips++;
+        yearlyReports[year].months[month].monthlyTrips++;
+      } else {
+        yearlyReports[year].yearlyParties++;
+        yearlyReports[year].months[month].monthlyParties++;
+      }
+
+      yearlyReports[year].totalAmount += planAmount;
+      yearlyReports[year].months[month].monthlyAmount += planAmount;
+
+      if (
+        !yearlyReports[year].months[month].mostSpentOn ||
+        planAmount > yearlyReports[year].months[month].mostSpentOn.amount
+      ) {
+        yearlyReports[year].months[month].mostSpentOn = { name: plan.name, amount: planAmount };
+      }
+
+      if (
+        !yearlyReports[year].months[month].leastSpentOn ||
+        planAmount < yearlyReports[year].months[month].leastSpentOn.amount
+      ) {
+        yearlyReports[year].months[month].leastSpentOn = { name: plan.name, amount: planAmount };
+      }
+    });
+
+    // --- NEW: Group Goals Report by Year ---
+    goals.forEach(goal => {
+      const createdAt = goal.id ? new Date(goal.id) : new Date(); // using id timestamp as proxy
+      const year = createdAt.getFullYear();
+
+      if (!yearlyReports[year]) {
+        yearlyReports[year] = {
+          yearlyTrips: 0,
+          yearlyParties: 0,
+          totalAmount: 0,
+          months: Array(12).fill(null).map(() => ({
+            monthlyTrips: 0,
+            monthlyParties: 0,
+            monthlyAmount: 0,
+            mostSpentOn: null,
+            leastSpentOn: null,
+          })),
+          goals: { total: 0, completed: 0, pending: 0, list: [] },
+        };
+      }
+
+      yearlyReports[year].goals.total++;
+      if (goal.done) {
+        yearlyReports[year].goals.completed++;
+      } else {
+        yearlyReports[year].goals.pending++;
+      }
+      yearlyReports[year].goals.list.push(goal);
+    });
+
+    return (
+      <View style={styles.fullScreenSectionContainer}>
+        <TouchableOpacity onPress={() => setShowReports(false)} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={30} color="#5A2E18" />
+        </TouchableOpacity>
+        <Text style={styles.sectionHeader}>Reports</Text>
+        <ScrollView contentContainerStyle={{ padding: 10 }}>
+          {Object.keys(yearlyReports).map(year => (
+            <View key={year} style={styles.reportCard}>
+              <Text style={styles.reportTitle}>{year} Report</Text>
+              <Text style={styles.reportText}>Yearly Trips: {yearlyReports[year].yearlyTrips}</Text>
+              <Text style={styles.reportText}>Yearly Parties: {yearlyReports[year].yearlyParties}</Text>
+              <Text style={styles.reportHighlight}>
+                Yearly Total Spent: ${yearlyReports[year].totalAmount.toFixed(2)}
+              </Text>
+
+              {/* --- NEW GOALS REPORT --- */}
+
+              <Text style={[styles.reportText,
+              { fontWeight: 'bold', fontStyle: 'italic', marginTop: 10 }
+              ]}>Accomplished Group goals</Text>
+
+              {yearlyReports[year].goals.list.length > 0 && (
+                <View style={{ marginTop: 5 }}>
+                  {yearlyReports[year].goals.list.map(g => (
+                    <Text
+                      key={g.id}
+                      style={{
+                        fontSize: 14,
+                        marginBottom: 5,
+                        color: g.done ? 'green' : '#A52A2A',
+
+                      }}
+                    >
+                      • {g.item || "Untitled Goal"}
+                    </Text>
+                  ))}
+                </View>
+              )}
+
+              {/* --- Existing Monthly Reports --- */}
+              {yearlyReports[year].months.map((monthData, monthIndex) => {
+                if (monthData.monthlyAmount > 0) {
+                  return (
+                    <View key={monthIndex} style={styles.monthlyReportCard}>
+                      <Text style={styles.monthlyReportTitle}>
+                        {new Date(year, monthIndex).toLocaleString('default', { month: 'long' })}
+                      </Text>
+                      <Text style={styles.reportText}>Monthly Trips: {monthData.monthlyTrips}</Text>
+                      <Text style={styles.reportText}>Monthly Parties: {monthData.monthlyParties}</Text>
+                      <Text style={styles.reportText}>
+                        Monthly Amount Spent: ${monthData.monthlyAmount.toFixed(2)}
+                      </Text>
+                      {monthData.mostSpentOn && (
+                        <Text style={styles.reportText}>
+                          Most Spent On: {monthData.mostSpentOn.name} ($
+                          {monthData.mostSpentOn.amount.toFixed(2)})
+                        </Text>
+                      )}
+                      {monthData.leastSpentOn && (
+                        <Text style={styles.reportText}>
+                          Least Spent On: {monthData.leastSpentOn.name} ($
+                          {monthData.leastSpentOn.amount.toFixed(2)})
+                        </Text>
+                      )}
+                    </View>
+                  );
+                }
+                return null;
+              })}
+            </View>
+          ))}
+        </ScrollView>
+      </View>
+    );
+  };
+
+ const handleLogout = () => {
+     Alert.alert("Logout", "Are you sure you want to logout?", [
+       { text: "Cancel", style: "cancel" },
+       {
+         text: "Logout",
+         onPress: async () => {
+           try {
+       
+             navigation.navigate('Login');
+           } catch (e) {
+             console.error("Logout error:", e);
+             Alert.alert("Error", "An error occurred during logout.");
+           }
+         },
+       },
+     ]);
+   };
 
   // --- Main Render ---
   return (
     <ImageBackground source={require('../assets/friendsbackg.jpg')} style={styles.background} resizeMode="cover">
-        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
-          <ScrollView contentContainerStyle={styles.container}>
-            {renderFriendsModal()}
-            
-            {/* UPDATED RENDER LOGIC */}
-            {showReports ? (
-              renderReports()
-            ) : !selectedSection ? (
-              <>
-                <Text style={styles.welcomeText}>Friends Hub</Text>
-                <Text style={styles.subtitle}>Plan, Share, and Remember</Text>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+        <ScrollView contentContainerStyle={styles.container}>
+          {renderFriendsModal()}
 
-                {/* NEW REPORTS BUTTON */}
-                <TouchableOpacity onPress={() => setShowReports(true)} style={styles.reportsButton}>
-                  <Text style={styles.reportsLink}>View Reports</Text>
+          {/* UPDATED RENDER LOGIC */}
+          {showReports ? (
+            renderReports()
+          ) : !selectedSection ? (
+            <>
+              <View style={styles.welcomeContainer}>
+                <Text style={styles.welcomeText}>Friends Hub</Text>
+                <TouchableOpacity onPress={handleLogout} style={styles.logoutIconButton}>
+                  <Text style={styles.logoutText}>Logout</Text>
                 </TouchableOpacity>
-                
-                <View style={styles.sectionsContainer}>
-                  <TouchableOpacity style={styles.sectionCard} onPress={() => setModalVisible(true)}>
-                    <View style={styles.sectionImageWrapper}><Image source={require('../assets/friendss.jpg')} style={styles.sectionImage} /></View>
-                    <Text style={styles.sectionText}>Manage Friends</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.sectionCard} onPress={() => setSelectedSection('events')}>
-                    <View style={styles.sectionImageWrapper}><Image source={require('../assets/party.jpg')} style={styles.sectionImage} /></View>
-                    <Text style={styles.sectionText}>Events/Parties</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.sectionCard} onPress={() => setSelectedSection('trips')}>
-                    <View style={styles.sectionImageWrapper}><Image source={require('../assets/trips.jpg')} style={styles.sectionImage} /></View>
-                    <Text style={styles.sectionText}>Trips/Travel</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.sectionCard} onPress={() => setSelectedSection('memories')}>
-                    <View style={styles.sectionImageWrapper}><Image source={require('../assets/memoriess.jpg')} style={styles.sectionImage} /></View>
-                    <Text style={styles.sectionText}>Memories</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.sectionCard} onPress={() => setSelectedSection('goals')}>
-                    <View style={styles.sectionImageWrapper}><Image source={require('../assets/friendsgoals.jpg')} style={styles.sectionImage} /></View>
-                    <Text style={styles.sectionText}>Group Goals</Text>
-                  </TouchableOpacity>
-                  {/* Reports card is removed from here */}
-                </View>
-              </>
-            ) : (
-                <>
-                  {selectedSection === 'events' && renderPlans('events', events)}
-                  {selectedSection === 'trips' && renderPlans('trips', trips)}
-                  {selectedSection === 'memories' && renderMemories()}
-                  {selectedSection === 'goals' && renderGoals()}
-                </>
-            )}
-          </ScrollView>
-        </KeyboardAvoidingView>
+              </View>
+              <Text style={styles.subtitle}>Plan, Share, and Remember</Text>
+
+
+              {/* NEW REPORTS BUTTON */}
+              <TouchableOpacity onPress={() => setShowReports(true)} style={styles.reportsButton}>
+                <Text style={styles.reportsLink}>View Reports</Text>
+              </TouchableOpacity>
+
+              <View style={styles.sectionsContainer}>
+                <TouchableOpacity style={styles.sectionCard} onPress={() => setModalVisible(true)}>
+                  <View style={styles.sectionImageWrapper}><Image source={require('../assets/friendss.jpg')} style={styles.sectionImage} /></View>
+                  <Text style={styles.sectionText}>Manage Friends</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.sectionCard} onPress={() => setSelectedSection('events')}>
+                  <View style={styles.sectionImageWrapper}><Image source={require('../assets/party.jpg')} style={styles.sectionImage} /></View>
+                  <Text style={styles.sectionText}>Events/Parties</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.sectionCard} onPress={() => setSelectedSection('trips')}>
+                  <View style={styles.sectionImageWrapper}><Image source={require('../assets/trips.jpg')} style={styles.sectionImage} /></View>
+                  <Text style={styles.sectionText}>Trips/Travel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.sectionCard} onPress={() => setSelectedSection('memories')}>
+                  <View style={styles.sectionImageWrapper}><Image source={require('../assets/memoriess.jpg')} style={styles.sectionImage} /></View>
+                  <Text style={styles.sectionText}>Memories</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.sectionCard} onPress={() => setSelectedSection('goals')}>
+                  <View style={styles.sectionImageWrapper}><Image source={require('../assets/friendsgoals.jpg')} style={styles.sectionImage} /></View>
+                  <Text style={styles.sectionText}>Group Goals</Text>
+                </TouchableOpacity>
+                {/* Reports card is removed from here */}
+              </View>
+            </>
+          ) : (
+            <>
+              {selectedSection === 'events' && renderPlans('events', events)}
+              {selectedSection === 'trips' && renderPlans('trips', trips)}
+              {selectedSection === 'memories' && renderMemories()}
+              {selectedSection === 'goals' && renderGoals()}
+            </>
+          )}
+        </ScrollView>
+      </KeyboardAvoidingView>
     </ImageBackground>
   );
 };
 
 // --- Styles ---
 const styles = StyleSheet.create({
-    background: { flex: 1, backgroundColor: '#A9998A' },
-    container: { flexGrow: 1, padding: 25, alignItems: 'center' },
-    welcomeText: { fontSize: 36, fontWeight: 'bold', color: '#3A3A3A', marginTop: 40, textAlign: 'center', textShadowColor: 'rgba(0, 0, 0, 0.1)', textShadowOffset: {width: -1, height: 1}, textShadowRadius: 2 },
-    subtitle: { fontSize: 18, color: '#5A2E18', marginBottom: 20, textAlign: 'center' },
-    
-    sectionsContainer: { width: '100%', flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-around' },
-    sectionCard: {
-      width: '46%',
-      backgroundColor: 'rgba(211, 201, 191, 0.85)',
-      borderRadius: 20,
-      alignItems: 'center',
-      justifyContent: 'flex-start',
-      marginBottom: 20,
-      paddingVertical: 20,
-      elevation: 4,
-      shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4,
-    },
-    sectionImageWrapper: {
-      width: 80,
-      height: 80,
-      borderRadius: 40,
-      overflow: 'hidden',
-      marginBottom: 15,
-      backgroundColor: '#EAE3DC',
-      alignItems: 'center',
-      justifyContent: 'center',
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.1,
-      shadowRadius: 2,
-    },
-    sectionImage: {
-      width: '90%',
-      height: '90%',
-      borderRadius: 35,
-    },
-    sectionText: { fontSize: 16, fontWeight: '600', color: '#3A3A3A', textAlign: 'center' },
-  
-    fullScreenSectionContainer: { flex: 1, width: '100%', backgroundColor: 'transparent', padding: 15 },
-    backButton: { position: 'absolute', top: 15, left: 15, zIndex: 10, backgroundColor: 'rgba(211, 201, 191, 0.8)', padding: 5, borderRadius: 20 },
-    sectionHeader: { fontSize: 28, fontWeight: 'bold', color: '#3A3A3A', marginBottom: 20, textAlign: 'center', marginTop: 50 },
-    
-    // Modal Styles
-    modalContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.6)' },
-    modalContent: { width: '90%', maxHeight: '80%', backgroundColor: '#D3C9BF', borderRadius: 20, padding: 20, elevation: 10 },
-    modalCloseButton: { backgroundColor: '#5A2E18', borderRadius: 15, padding: 15, marginTop: 20 },
-    modalCloseButtonText: { color: '#fff', textAlign: 'center', fontSize: 16, fontWeight: 'bold' },
-  
-    rowContainer: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-    largeInput: { flex: 1, backgroundColor: '#EAE3DC', borderRadius: 12, padding: 12, marginRight: 8, fontSize: 16, color: '#3A3A3A' },
-    addButton: { alignSelf: 'center', marginTop: 10, marginBottom: 15, flexDirection: 'row', alignItems: 'center', backgroundColor: '#DDCB97', paddingVertical: 10, paddingHorizontal: 20, borderRadius: 20, elevation: 2 },
-    addButtonText: { color: '#3A3A3A', fontSize: 16, fontWeight: 'bold', marginLeft: 8 },
-  
-    // Plan Styles
-    planContainer: { backgroundColor: 'rgba(211, 201, 191, 0.9)', borderRadius: 15, padding: 15, marginBottom: 20, elevation: 3 },
-    planTitleInput: { fontSize: 18, fontWeight: 'bold', color: '#3A3A3A', borderBottomWidth: 1, borderColor: '#A9998A', paddingBottom: 8, marginBottom: 10 },
-    planAmountInput: { backgroundColor: '#EAE3DC', borderRadius: 10, padding: 10, fontSize: 16, marginBottom: 5 },
-    perHeadText: { fontSize: 15, color: '#5A2E18', fontStyle: 'italic', marginBottom: 15, textAlign: 'center' },
-    rolesHeader: { fontSize: 16, fontWeight: '600', color: '#3A3A3A', marginBottom: 5 },
-    rolesInput: { backgroundColor: '#EAE3DC', borderRadius: 10, padding: 10, fontSize: 14, minHeight: 60, textAlignVertical: 'top' },
-    removePlanButton: { marginTop: 15, alignItems: 'center', padding: 8, backgroundColor: '#C8A0A0', borderRadius: 10 },
-    removePlanText: { color: '#5A2E18', fontWeight: 'bold' },
-  
-    // Memories Styles
-    memoryRowContainer: { flexDirection: 'row', alignItems: 'center', marginBottom: 15, backgroundColor: 'rgba(211, 201, 191, 0.9)', padding: 10, borderRadius: 15 },
-    imagePickerContainer: { width: 80, height: 80, borderRadius: 12, overflow: 'hidden' },
-    memoryImage: { width: '100%', height: '100%', borderRadius: 12 },
-    imagePlaceholder: { width: '100%', height: '100%', backgroundColor: '#EAE3DC', justifyContent: 'center', alignItems: 'center', borderRadius: 12, borderWidth: 2, borderColor: '#5A2E18', borderStyle: 'dashed' },
-    imagePlaceholderText: { color: '#5A2E18', fontSize: 12, textAlign: 'center' },
-    memoryNoteInput: { flex: 1, backgroundColor: '#EAE3DC', borderRadius: 12, padding: 10, marginHorizontal: 8, fontSize: 14, minHeight: 80, textAlignVertical: 'top' },
-    
-    // NEW STYLES FOR REPORTS BUTTON
-    reportsButton: {
-      backgroundColor: 'rgba(90, 46, 24, 0.8)', // Dark brown color from theme
-      paddingVertical: 12,
-      paddingHorizontal: 20,
-      borderRadius: 50,
-      alignItems: 'center',
-      marginBottom: 20,
-      width: '90%',
-      elevation: 3,
-    },
-    reportsLink: {
-      fontSize: 18,
-      color: '#fff',
-      fontWeight: '600',
-    },
-  
-    // Reports Styles
-    reportCard: { backgroundColor: 'rgba(211, 201, 191, 0.95)', borderRadius: 15, padding: 20, elevation: 2, marginBottom: 20 },
-    reportTitle: { fontSize: 20, fontWeight: 'bold', color: '#3A3A3A', marginBottom: 15, textAlign: 'center' },
-    reportText: { fontSize: 16, color: '#5A2E18', marginBottom: 8, lineHeight: 22 },
-    reportHighlight: { fontSize: 17, fontWeight: 'bold', color: '#3A3A3A', marginTop: 15, textAlign: 'center', backgroundColor: '#DDCB97', padding: 10, borderRadius: 10,marginBottom:10 },
-    monthlyReportCard: {
-        backgroundColor: 'rgba(234, 227, 220, 0.9)',
-        borderRadius: 10,
-        padding: 15,
-        marginTop: 15,
-      },
-      monthlyReportTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: '#5A2E18',
-        marginBottom: 10,
-      },
-  });
-  
-  export default FriendsScreen;
+  background: { flex: 1, backgroundColor: '#A9998A' },
+  container: { flexGrow: 1, padding: 25, alignItems: 'center' },
+  welcomeText: { fontSize: 36, fontWeight: 'bold', color: '#3A3A3A', textAlign: 'center', textShadowColor: 'rgba(0, 0, 0, 0.1)', textShadowOffset: { width: -1, height: 1 }, textShadowRadius: 2 },
+  subtitle: { fontSize: 18, color: '#5A2E18', marginBottom: 20, textAlign: 'center' },
+
+  sectionsContainer: { width: '100%', flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-around' },
+  sectionCard: {
+    width: '46%',
+    backgroundColor: 'rgba(211, 201, 191, 0.85)',
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    marginBottom: 20,
+    paddingVertical: 20,
+    elevation: 4,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4,
+  },
+  sectionImageWrapper: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    overflow: 'hidden',
+    marginBottom: 15,
+    backgroundColor: '#EAE3DC',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  sectionImage: {
+    width: '90%',
+    height: '90%',
+    borderRadius: 35,
+  },
+  sectionText: { fontSize: 16, fontWeight: '600', color: '#3A3A3A', textAlign: 'center' },
+
+  fullScreenSectionContainer: { flex: 1, width: '100%', backgroundColor: 'transparent', padding: 15 },
+  backButton: { position: 'absolute', top: 15, left: 15, zIndex: 10, backgroundColor: 'rgba(211, 201, 191, 0.8)', padding: 5, borderRadius: 20 },
+  sectionHeader: { fontSize: 28, fontWeight: 'bold', color: '#3A3A3A', marginBottom: 20, textAlign: 'center', marginTop: 50 },
+
+  // Modal Styles
+  modalContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.6)' },
+  modalContent: { width: '90%', maxHeight: '80%', backgroundColor: '#D3C9BF', borderRadius: 20, padding: 20, elevation: 10 },
+  modalCloseButton: { backgroundColor: '#5A2E18', borderRadius: 15, padding: 15, marginTop: 20 },
+  modalCloseButtonText: { color: '#fff', textAlign: 'center', fontSize: 16, fontWeight: 'bold' },
+
+  rowContainer: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  largeInput: { flex: 1, backgroundColor: '#EAE3DC', borderRadius: 12, padding: 12, marginRight: 8, fontSize: 16, color: '#3A3A3A' },
+  addButton: { alignSelf: 'center', marginTop: 10, marginBottom: 15, flexDirection: 'row', alignItems: 'center', backgroundColor: '#DDCB97', paddingVertical: 10, paddingHorizontal: 20, borderRadius: 20, elevation: 2 },
+  addButtonText: { color: '#3A3A3A', fontSize: 16, fontWeight: 'bold', marginLeft: 8 },
+
+  // Plan Styles
+  planContainer: { backgroundColor: 'rgba(211, 201, 191, 0.9)', borderRadius: 15, padding: 15, marginBottom: 20, elevation: 3 },
+  planTitleInput: { fontSize: 18, fontWeight: 'bold', color: '#3A3A3A', borderBottomWidth: 1, borderColor: '#A9998A', paddingBottom: 8, marginBottom: 10 },
+  planAmountInput: { backgroundColor: '#EAE3DC', borderRadius: 10, padding: 10, fontSize: 16, marginBottom: 5 },
+  perHeadText: { fontSize: 15, color: '#5A2E18', fontStyle: 'italic', marginBottom: 15, textAlign: 'center' },
+  rolesHeader: { fontSize: 16, fontWeight: '600', color: '#3A3A3A', marginBottom: 5 },
+  rolesInput: { backgroundColor: '#EAE3DC', borderRadius: 10, padding: 10, fontSize: 14, minHeight: 60, textAlignVertical: 'top' },
+  removePlanButton: { marginTop: 15, alignItems: 'center', padding: 8, backgroundColor: '#C8A0A0', borderRadius: 10 },
+  removePlanText: { color: '#5A2E18', fontWeight: 'bold' },
+
+  // Memories Styles
+  memoryRowContainer: { flexDirection: 'row', alignItems: 'center', marginBottom: 15, backgroundColor: 'rgba(211, 201, 191, 0.9)', padding: 10, borderRadius: 15 },
+  imagePickerContainer: { width: 80, height: 80, borderRadius: 12, overflow: 'hidden' },
+  memoryImage: { width: '100%', height: '100%', borderRadius: 12 },
+  imagePlaceholder: { width: '100%', height: '100%', backgroundColor: '#EAE3DC', justifyContent: 'center', alignItems: 'center', borderRadius: 12, borderWidth: 2, borderColor: '#5A2E18', borderStyle: 'dashed' },
+  imagePlaceholderText: { color: '#5A2E18', fontSize: 12, textAlign: 'center' },
+  memoryNoteInput: { flex: 1, backgroundColor: '#EAE3DC', borderRadius: 12, padding: 10, marginHorizontal: 8, fontSize: 14, minHeight: 80, textAlignVertical: 'top' },
+
+  // NEW STYLES FOR REPORTS BUTTON
+  reportsButton: {
+    backgroundColor: 'rgba(90, 46, 24, 0.8)', // Dark brown color from theme
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 50,
+    alignItems: 'center',
+    marginBottom: 20,
+    width: '90%',
+    elevation: 3,
+  },
+  reportsLink: {
+    fontSize: 18,
+    color: '#fff',
+    fontWeight: '600',
+  },
+
+  // Reports Styles
+  reportCard: { backgroundColor: 'rgba(211, 201, 191, 0.95)', borderRadius: 15, padding: 20, elevation: 2, marginBottom: 20 },
+  reportTitle: { fontSize: 20, fontWeight: 'bold', color: '#3A3A3A', marginBottom: 15, textAlign: 'center' },
+  reportText: { fontSize: 16, color: '#5A2E18', marginBottom: 8, lineHeight: 22 },
+  reportHighlight: { fontSize: 17, fontWeight: 'bold', color: '#3A3A3A', marginTop: 15, textAlign: 'center', backgroundColor: '#DDCB97', padding: 10, borderRadius: 10, marginBottom: 10 },
+  monthlyReportCard: {
+    backgroundColor: 'rgba(234, 227, 220, 0.9)',
+    borderRadius: 10,
+    padding: 15,
+    marginTop: 15,
+  },
+  monthlyReportTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#5A2E18',
+    marginBottom: 10,
+  },
+  welcomeContainer: {
+    flexDirection: 'row',
+    width: '100%',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 20,
+    marginBottom: 25,
+    paddingHorizontal: 5,
+  },
+  logoutIconButton: {
+    padding: 12,
+    borderRadius: 25,
+    backgroundColor: 'rgba(255,255,255,0.8)',
+  },
+  logoutText: {
+    color: '#5A2E18',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+
+});
+
+export default FriendsScreen;
