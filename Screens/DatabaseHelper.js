@@ -45,29 +45,29 @@ export const DatabaseHelper = {
   },
 
   // Get all financial data keys for a user (for reports)
-  getAllUserFinancialKeys: (mobile) => {
-    return new Promise((resolve, reject) => {
-      db.transaction(tx => {
-        tx.executeSql(
-          'SELECT data_key, data_value FROM UserFinancialData WHERE mobile = ? AND data_key LIKE "financials_%"',
-          [mobile],
-          (_, results) => {
-            const data = {};
-            for (let i = 0; i < results.rows.length; i++) {
-              try {
-                const item = results.rows.item(i);
-                data[item.data_key] = JSON.parse(item.data_value);
-              } catch (e) {
-                console.log("Error parsing data for key:", item.data_key);
-              }
+ getAllUserFinancialKeys: (mobile) => {
+  return new Promise((resolve, reject) => {
+    db.transaction(tx => {
+      tx.executeSql(
+        'SELECT data_key, data_value FROM UserFinancialData WHERE mobile = ? AND (data_key LIKE "financials_%" OR data_key LIKE "partner_financials_%")',
+        [mobile],
+        (_, results) => {
+          const data = {};
+          for (let i = 0; i < results.rows.length; i++) {
+            try {
+              const item = results.rows.item(i);
+              data[item.data_key] = JSON.parse(item.data_value);
+            } catch (e) {
+              console.log("Error parsing data for key:", item.data_key);
             }
-            resolve(data);
-          },
-          (_, error) => reject(error)
-        );
-      });
+          }
+          resolve(data);
+        },
+        (_, error) => reject(error)
+      );
     });
-  },
+  });
+},
 
   // Delete user data
   deleteUserData: (mobile, key) => {

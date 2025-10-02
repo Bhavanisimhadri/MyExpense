@@ -93,7 +93,7 @@ const PartnersScreen = ({ route, navigation }) => {
         const memoriesData = await DatabaseHelper.getUserData(mobile, 'memories');
         setMemories(memoriesData && memoriesData.length > 0 ? memoriesData : [{ image: null, note: '' }]);
 
-        const allFinancials = await DatabaseHelper.getAllUserFinancialKeys(mobile, 'partner_financials');
+        const allFinancials = await DatabaseHelper.getAllUserFinancialKeys(mobile);
         setAllFinancialData(allFinancials);
 
       } catch (error) {
@@ -370,65 +370,162 @@ const handleRemoveRow = (section, index) => {
     </ScrollView>
   );
   
-  const renderReports = () => {
-    const monthNames = ["", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+const renderReports = () => {
+  const yearlyReports = {};
+
+  // Group data by year and month
+  Object.keys(allFinancialData).forEach(key => {
+    // Handle both "partner_financials_YYYY_M" and "financials_YYYY_M" formats
+    let year, month;
     
-    const reportsByYear = Object.keys(allFinancialData).reduce((acc, key) => {
-        const parts = key.split('_');
-        if (parts.length < 4) return acc; 
-        const year = parts[2];
-        const month = parseInt(parts[3], 10);
-        const data = allFinancialData[key];
+    if (key.startsWith('partner_financials_')) {
+      const parts = key.split('_');
+      if (parts.length >= 4) {
+        year = parts[2];
+        month = parts[3];
+      }
+    } else if (key.startsWith('financials_')) {
+      const parts = key.split('_');
+      if (parts.length >= 3) {
+        year = parts[1];
+        month = parts[2];
+      }
+    }
 
-        if (!acc[year]) {
-            acc[year] = [];
-        }
+    if (!year || !month) return;
 
-        const totalHerExp = (data.herExpenses || []).reduce((sum, item) => sum + parseAmount(item.amount), 0);
-        const totalHisExp = (data.hisExpenses || []).reduce((sum, item) => sum + parseAmount(item.amount), 0);
-        const totalIncome = parseAmount(data.herMonthlyIncome) + parseAmount(data.hisMonthlyIncome);
-        const totalSavings = parseAmount(data.herSavings) + parseAmount(data.hisSavings);
+    if (!yearlyReports[year]) {
+      yearlyReports[year] = { months: {}, totalSpent: 0, totalIncome: 0, totalSavings: 0 };
+    }
+    
+    const data = allFinancialData[key];
+    const monthlyHerExpenses = (data.herExpenses || []).reduce((sum, item) => sum + parseAmount(item.amount), 0);
+    const monthlyHisExpenses = (data.hisExpenses || []).reduce((sum, item) => sum + parseAmount(item.amount), 0);
+    const monthlySpent = monthlyHerExpenses + monthlyHisExpenses;
+    const monthlyIncomeVal = parseAmount(data.herMonthlyIncome || 0) + parseAmount(data.hisMonthlyIncome || 0);
+    const monthlySavingsVal = parseAmount(data.herSavings || 0) + parseAmount(data.hisSavings || 0);
 
-        acc[year].push({
-            month,
-            monthName: monthNames[month],
-            totalIncome,
-            totalSavings,
-            totalExpenses: totalHerExp + totalHisExp,
-        });
+    yearlyReports[year].months[month] = {
+      income: monthlyIncomeVal,
+      savings: monthlySavingsVal,
+      spent: monthlySpent,
+      remainingSavings: monthlySavingsVal - Math.max(0, monthlySpent - (monthlyIncomeVal - monthlySavingsVal)),
+      herExpenses: data.herExpenses || [],
+      hisExpenses: data.hisExpenses || []
+    };
+    
+    yearlyReports[year].totalSpent += monthlySpent;
+    yearlyReports[year].totalIncome += monthlyIncomeVal;
+    yearlyReports[year].totalSavings += monthlySavingsVal;
+  });
 
-        return acc;
-    }, {});
+  return (
+    <View style={styles.fullScreenSectionContainer}>
+      <TouchableOpacity onPress={() => setShowReports(false)} style={styles.backButton}>
+        <Ionicons name="arrow-back" size={30} color="#C2185B" />
+      </TouchableOpacity>
+      <Text style={styles.sectionHeader}>Financial Reports</Text>
+      <ScrollView>
+        {Object.keys(yearlyReports).sort((a, b) => b - a).map(year => (
+          <View key={year} style={styles.reportYearContainer}>
+            <Text style={styles.reportYearHeader}>{year}</Text>
+            <Text style={styles.reportSummaryText}>Yearly Combined Income: ${yearlyReports[year].totalIncome.toFixed(2)}</Text>
+            <Text style={styles.reportSummaryText}>Yearly Combined Savings: ${yearlyReports[year].totalSavings.toFixed(2)}</Text>
+            <Text style={styles.reportSummaryText}>Yearly Combined Expenses: ${yearlyReports[year].totalSpent.toFixed(2)}</Text>
+            
+            {coupleGoals.filter(item => item.done).length > 0 && (
+              <View style={{ marginTop: 10, marginBottom: 10 }}>
+                <Text style={styles.reportHighlightText}>Accomplished Couple Goals:</Text>
+                {coupleGoals
+                  .filter(item => item.done)
+                  .map((item, index) => (
+                    <Text key={index} style={styles.reportHighlightText}>
+                      ✓ {item.item}
+                    </Text>
+                  ))}
+              </View>
+            )}
 
-    const sortedYears = Object.keys(reportsByYear).sort((a, b) => b - a);
+            {Object.keys(yearlyReports[year].months).sort((a, b) => b - a).map(month => {
+              const monthData = yearlyReports[year].months[month];
+              const herExpenses = monthData.herExpenses || [];
+              const hisExpenses = monthData.hisExpenses || [];
+              
+              const validHerExpenses = herExpenses.filter(item => 
+                item.element && item.element.trim() && parseAmount(item.amount) > 0
+              );
+              const validHisExpenses = hisExpenses.filter(item => 
+                item.element && item.element.trim() && parseAmount(item.amount) > 0
+              );
 
-    return (
-        <View style={styles.fullScreenSectionContainer}>
-            <TouchableOpacity onPress={() => setShowReports(false)} style={styles.backButton}>
-                <Ionicons name="arrow-back" size={30} color="#C2185B" />
-            </TouchableOpacity>
-            <Text style={styles.sectionHeader}>Financial Reports</Text>
-            <ScrollView>
-                {sortedYears.length > 0 ? (
-                    sortedYears.map(year => (
-                        <View key={year} style={styles.reportYearContainer}>
-                            <Text style={styles.reportYearHeader}>{year}</Text>
-                            {reportsByYear[year].sort((a, b) => b.month - a.month).map(monthData => (
-                                <View key={monthData.month} style={styles.reportMonthContainer}>
-                                    <Text style={styles.reportMonthHeader}>{monthData.monthName}</Text>
-                                    <Text style={styles.reportSummaryText}>Total Income: ${monthData.totalIncome.toFixed(2)}</Text>
-                                    <Text style={styles.reportSummaryText}>Total Savings: ${monthData.totalSavings.toFixed(2)}</Text>
-                                    <Text style={styles.reportHighlightText}>Total Expenses: ${monthData.totalExpenses.toFixed(2)}</Text>
-                                </View>
-                            ))}
-                        </View>
-                    ))
-                ) : (
-                    <Text style={styles.noDataText}>No financial data recorded yet.</Text>
-                )}
-            </ScrollView>
-        </View>
-    );
+              // Calculate individual totals
+              const herTotal = validHerExpenses.reduce((sum, item) => sum + parseAmount(item.amount), 0);
+              const hisTotal = validHisExpenses.reduce((sum, item) => sum + parseAmount(item.amount), 0);
+
+              // Find most spent for HER
+              let herMostSpentText = null;
+              let herLeastSpentText = null;
+              if (validHerExpenses.length > 0) {
+                const sortedHerExpenses = [...validHerExpenses].sort((a, b) => parseAmount(b.amount) - parseAmount(a.amount));
+                const herMostSpentItem = sortedHerExpenses[0];
+                herMostSpentText = `Her most spent: ${herMostSpentItem.element} - $${parseAmount(herMostSpentItem.amount).toFixed(2)}`;
+
+                if (sortedHerExpenses.length > 1) {
+                  const herLeastSpentItem = sortedHerExpenses[sortedHerExpenses.length - 1];
+                  if (parseAmount(herMostSpentItem.amount) !== parseAmount(herLeastSpentItem.amount)) {
+                    herLeastSpentText = `Her least spent: ${herLeastSpentItem.element} - $${parseAmount(herLeastSpentItem.amount).toFixed(2)}`;
+                  }
+                }
+              }
+
+              // Find most spent for HIM
+              let hisMostSpentText = null;
+              let hisLeastSpentText = null;
+              if (validHisExpenses.length > 0) {
+                const sortedHisExpenses = [...validHisExpenses].sort((a, b) => parseAmount(b.amount) - parseAmount(a.amount));
+                const hisMostSpentItem = sortedHisExpenses[0];
+                hisMostSpentText = `His most spent: ${hisMostSpentItem.element} - $${parseAmount(hisMostSpentItem.amount).toFixed(2)}`;
+
+                if (sortedHisExpenses.length > 1) {
+                  const hisLeastSpentItem = sortedHisExpenses[sortedHisExpenses.length - 1];
+                  if (parseAmount(hisMostSpentItem.amount) !== parseAmount(hisLeastSpentItem.amount)) {
+                    hisLeastSpentText = `His least spent: ${hisLeastSpentItem.element} - $${parseAmount(hisLeastSpentItem.amount).toFixed(2)}`;
+                  }
+                }
+              }
+
+              return (
+                <View key={month} style={styles.reportMonthContainer}>
+                  <Text style={styles.reportMonthHeader}>
+                    {new Date(year, month - 1).toLocaleString('default', { month: 'long' })}
+                  </Text>
+                  <Text style={styles.reportSummaryText}>Combined Income: ${monthData.income.toFixed(2)}</Text>
+                  <Text style={styles.reportSummaryText}>Combined Savings: ${monthData.savings.toFixed(2)}</Text>
+                  <Text style={styles.reportSummaryText}>Her Expenses: ${herTotal.toFixed(2)}</Text>
+                  <Text style={styles.reportSummaryText}>His Expenses: ${hisTotal.toFixed(2)}</Text>
+                  <Text style={styles.reportHighlightText}>Total Expenses: ${monthData.spent.toFixed(2)}</Text>
+                  
+                  {/* Her Spending Analysis */}
+                  {herMostSpentText && <Text style={styles.herAnalysisText}>{herMostSpentText}</Text>}
+                  {herLeastSpentText && <Text style={styles.herAnalysisText}>{herLeastSpentText}</Text>}
+                  
+                  {/* His Spending Analysis */}
+                  {hisMostSpentText && <Text style={styles.hisAnalysisText}>{hisMostSpentText}</Text>}
+                  {hisLeastSpentText && <Text style={styles.hisAnalysisText}>{hisLeastSpentText}</Text>}
+                  
+                  <Text style={styles.reportSummaryText}>Remaining Savings: ${monthData.remainingSavings.toFixed(2)}</Text>
+                </View>
+              );
+            })}
+          </View>
+        ))}
+        
+        {Object.keys(yearlyReports).length === 0 && (
+          <Text style={styles.noDataText}>No financial data recorded yet.</Text>
+        )}
+      </ScrollView>
+    </View>
+  );
 };
 
   return (
@@ -793,6 +890,24 @@ const styles = StyleSheet.create({
      borderRadius: 30,
      backgroundColor: 'rgba(255, 255, 255, 0.8)',
    },
+  herAnalysisText: {
+  fontSize: 14,
+  fontWeight: '500',
+  color: '#ae18c2ff', // Pink color for her
+  marginTop: 2,
+  marginBottom: 2,
+  fontStyle: 'italic',
+  marginLeft: 5,
+},
+hisAnalysisText: {
+  fontSize: 14,
+  fontWeight: '500',
+  color: '#1350acff', // Blue color for him
+  marginTop: 2,
+  marginBottom: 2,
+  fontStyle: 'italic',
+  marginLeft: 5,
+},
  });
  
  export default PartnersScreen;
