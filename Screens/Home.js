@@ -66,7 +66,7 @@ const HomeScreen = ({ navigation, route }) => {
           {  fontStyle: 'italic' }
         ]}
       >
-        Note: Once the category is selected for the particular phone number log in to that category using that mobile number.
+       Note: Once a category is selected, you can log in to that category using your mobile number. To change your category, please go to the ‘Category Update’ option on the signup page.
       </Text>
 
       <View style={styles.grid}>
