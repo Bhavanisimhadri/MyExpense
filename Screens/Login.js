@@ -125,7 +125,7 @@ const LoginScreen = ({ navigation }) => {
         keyboardType="phone-pad"
         value={mobile}
         onChangeText={setMobile}
-        placeholder="9876543210"
+        placeholder="Enter 10-digit mobile number"
         placeholderTextColor="#888"
       />
 

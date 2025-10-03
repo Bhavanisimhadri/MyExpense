@@ -7,18 +7,60 @@ import {
   StyleSheet, 
   TouchableOpacity 
 } from 'react-native';
+import SQLite from 'react-native-sqlite-storage';
 
-const AdminLoginScreen = ({ navigation }) => {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+const db = SQLite.openDatabase({ name: 'ExpenseDB.db', location: 'default' });
 
-  const handleAdminLogin = () => {
-    if (username === 'admin' && password === 'admin@123') {
-      navigation.replace('AdminPanel');
-    } else {
-      Alert.alert('Error', 'Invalid admin credentials');
-      setPassword('');
+const CategoryUpdateScreen = ({ navigation }) => {
+  const [name, setName] = useState('');
+  const [mobile, setMobile] = useState('');
+
+  const handleCategoryUpdate = () => {
+    if (!name.trim() || mobile.length !== 10) {
+      Alert.alert('Error', 'Please enter valid name and 10-digit mobile number');
+      return;
     }
+
+    // First verify the user exists
+    db.transaction(tx => {
+      tx.executeSql(
+        'SELECT * FROM Users WHERE mobile = ? AND name = ?',
+        [mobile, name.trim()],
+        (_, results) => {
+          if (results.rows.length === 0) {
+            Alert.alert('Error', 'User not found. Please check name and mobile number.');
+            return;
+          }
+
+          const user = results.rows.item(0);
+          
+          // User exists, navigate to Home to select new category
+          Alert.alert(
+            'Success', 
+            'User verified! Please select your new category.',
+            [
+              { 
+                text: 'OK', 
+                onPress: () => {
+                  console.log("Category Update - Navigating to Home with:", { 
+                    mobile, 
+                    name: name.trim() 
+                  });
+                  navigation.replace('Home', { 
+                    mobile, 
+                    name: name.trim() 
+                  });
+                }
+              }
+            ]
+          );
+        },
+        err => {
+          console.log('Database error:', err);
+          Alert.alert('Error', 'Database error occurred');
+        }
+      );
+    });
   };
 
   return (
@@ -30,32 +72,32 @@ const AdminLoginScreen = ({ navigation }) => {
         <Text style={styles.backButtonText}>🔙</Text>
       </TouchableOpacity>
 
-      <Text style={styles.title}>Admin Login</Text>
-      <Text style={styles.subtitle}>Enter admin credentials</Text>
+      <Text style={styles.title}>Update Category</Text>
+      <Text style={styles.subtitle}>Enter user details to change category</Text>
 
-      <Text style={styles.label}>Username</Text>
+      <Text style={styles.label}>Name</Text>
       <TextInput
         style={styles.input}
-        value={username}
-        onChangeText={setUsername}
-        placeholder="Enter username"
+        value={name}
+        onChangeText={setName}
+        placeholder="Enter user's name"
         placeholderTextColor="#888"
-        autoCapitalize="none"
+        autoCapitalize="words"
       />
 
-      <Text style={styles.label}>Password</Text>
+      <Text style={styles.label}>Mobile Number</Text>
       <TextInput
         style={styles.input}
-        value={password}
-        onChangeText={setPassword}
-        placeholder="Enter password"
+        value={mobile}
+        onChangeText={setMobile}
+        placeholder="Enter 10-digit mobile number"
         placeholderTextColor="#888"
-        secureTextEntry={true}
-        autoCapitalize="none"
+        keyboardType="phone-pad"
+        maxLength={10}
       />
 
-      <TouchableOpacity style={styles.button} onPress={handleAdminLogin}>
-        <Text style={styles.buttonText}>Login as Admin</Text>
+      <TouchableOpacity style={styles.button} onPress={handleCategoryUpdate}>
+        <Text style={styles.buttonText}>Update Category</Text>
       </TouchableOpacity>
     </View>
   );
@@ -111,7 +153,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   button: {
-    backgroundColor: '#D35225', 
+    backgroundColor: '#2C9C94', 
     paddingVertical: 14, 
     paddingHorizontal: 40,
     borderRadius: 12,
@@ -126,4 +168,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default AdminLoginScreen;
+export default CategoryUpdateScreen;

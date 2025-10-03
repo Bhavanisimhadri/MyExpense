@@ -66,8 +66,7 @@ const HomeScreen = ({ navigation, route }) => {
           {  fontStyle: 'italic' }
         ]}
       >
-        Note: Once the category is selected for the particular phone number you
-        can't change it. You can log in to that category using that mobile number.
+        Note: Once the category is selected for the particular phone number log in to that category using that mobile number.
       </Text>
 
       <View style={styles.grid}>

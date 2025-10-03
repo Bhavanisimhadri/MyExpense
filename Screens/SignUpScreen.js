@@ -87,7 +87,7 @@ useEffect(() => {
         keyboardType="phone-pad"
         value={mobile}
         onChangeText={setMobile}
-        placeholder="9876543210"
+        placeholder="Enter 10-digit mobile number"
         placeholderTextColor="#888"
       />
 
@@ -103,7 +103,7 @@ useEffect(() => {
       </TouchableOpacity>
        <TouchableOpacity onPress={() => navigation.navigate('AdminLogin')}>
         <Text style={styles.loginText}>
-         <Text style={styles.loginLink}>Admin Login</Text>
+         <Text style={styles.loginLink}>Category update</Text>
         </Text>
         
       </TouchableOpacity>
