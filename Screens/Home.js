@@ -1,5 +1,12 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  TouchableOpacity, 
+  Image, 
+  Alert 
+} from 'react-native';
 import SQLite from 'react-native-sqlite-storage';
 
 const db = SQLite.openDatabase({ name: 'ExpenseDB.db', location: 'default' });
@@ -52,9 +59,24 @@ const HomeScreen = ({ navigation, route }) => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Select Your Category</Text>
+
+      <Text 
+        style={[
+          styles.reportText,
+          {  fontStyle: 'italic' }
+        ]}
+      >
+        Note: Once the category is selected for the particular phone number you
+        can't change it. You can log in to that category using that mobile number.
+      </Text>
+
       <View style={styles.grid}>
         {categories.map((item, index) => (
-          <TouchableOpacity key={index} style={styles.card} onPress={() => handleCategoryPress(item)}>
+          <TouchableOpacity 
+            key={index} 
+            style={styles.card} 
+            onPress={() => handleCategoryPress(item)}
+          >
             <Image source={item.image} style={styles.image} />
             <Text style={styles.label}>{item.name}</Text>
           </TouchableOpacity>
@@ -71,11 +93,19 @@ const styles = StyleSheet.create({
     alignItems: 'center', 
     paddingTop: 50 
   },
+  reportText: { 
+    fontSize: 12, 
+    color: '#5A2E18', 
+    marginBottom: 8, 
+    lineHeight: 15,
+    textAlign: 'center',
+    paddingHorizontal: 15,
+  },
   title: { 
     fontSize: 26, 
     fontWeight: 'bold', 
     color: '#D35225', 
-    marginBottom: 40,
+    marginBottom: 5,
     letterSpacing: 1,
   },
   grid: { 
