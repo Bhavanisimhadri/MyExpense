@@ -82,15 +82,6 @@ export default function App() {
     });
   }, []);
 
-  // Show loading indicator
-  if (!initialRoute) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#D35225" />
-      </View>
-    );
-  }
-
   // 🔹 Your existing notification + Firebase setup stays as is
   useEffect(() => {
     PushNotification.createChannel(
@@ -132,20 +123,27 @@ export default function App() {
   // 🔹 Navigation
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName={initialRoute}>
-        <Stack.Screen name="Splash" component={SplashScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="SignUp" component={SignUpScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="WomenScreen" component={WomenScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="MenScreen" component={MenScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="StudentScreen" component={StudentScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="ElderScreen" component={ElderScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="PartnersScreen" component={PartnersScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="FriendsScreen" component={FriendsScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="AdminLogin" component={AdminLoginScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="AdminPanel" component={AdminPanelScreen} options={{ headerShown: false }} />
-      </Stack.Navigator>
+      {/* Show loading indicator while initialRoute is not set */}
+      {!initialRoute ? (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color="#D35225" />
+        </View>
+      ) : (
+        <Stack.Navigator initialRouteName={initialRoute}>
+          <Stack.Screen name="Splash" component={SplashScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="SignUp" component={SignUpScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="WomenScreen" component={WomenScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="MenScreen" component={MenScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="StudentScreen" component={StudentScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="ElderScreen" component={ElderScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="PartnersScreen" component={PartnersScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="FriendsScreen" component={FriendsScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="AdminLogin" component={AdminLoginScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="AdminPanel" component={AdminPanelScreen} options={{ headerShown: false }} />
+        </Stack.Navigator>
+      )}
     </NavigationContainer>
   );
 }
