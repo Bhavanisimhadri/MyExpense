@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "991024911159",
+    "project_id": "myexpense-25",
+    "storage_bucket": "myexpense-25.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:991024911159:android:1bd0211d7699c9150240b2",
+        "android_client_info": {
+          "package_name": "com.newreact"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAbeQMmbYAcOP_2Wup9qrUVttUvUmPYVbo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
