@@ -253,30 +253,38 @@ const setReminderForNote = (index) => {
   const handleAddRow = (section) => {
     // Validation: Prevent adding a new row if the last one is empty
     if (section === 'needs') {
-      const lastNeed = needs[needs.length - 1];
-      if (!lastNeed.element.trim() || !lastNeed.amount.trim()) {
+      const lastNeed = needs[needs.length - 1] || {};
+      const element = typeof lastNeed.element === 'string' ? lastNeed.element.trim() : '';
+      const amount = typeof lastNeed.amount === 'string' ? lastNeed.amount.trim() : '';
+      if (!element || !amount) {
         Alert.alert("Validation Error", "Please fill in the current 'Need' before adding a new one.");
         return;
       }
       setNeeds([...needs, { element: '', amount: '' }]);
     }
     if (section === 'wants') {
-      const lastWant = wants[wants.length - 1];
-      if (!lastWant.element.trim() || !lastWant.amount.trim()) {
+      const lastWant = wants[wants.length - 1] || {};
+      const element = typeof lastWant.element === 'string' ? lastWant.element.trim() : '';
+      const amount = typeof lastWant.amount === 'string' ? lastWant.amount.trim() : '';
+      if (!element || !amount) {
         Alert.alert("Validation Error", "Please fill in the current 'Want' before adding a new one.");
         return;
       }
       setWants([...wants, { element: '', amount: '' }]);
     }
     if (section === 'notes') {
-      if (!notes[notes.length - 1].trim()) {
+      const lastNote = notes[notes.length - 1];
+      const noteText = typeof lastNote === 'string' ? lastNote.trim() : '';
+      if (!noteText) {
         Alert.alert("Validation Error", "Please fill in the current 'Note' before adding a new one.");
         return;
       }
       setNotes([...notes, '']);
     }
     if (section === 'bucket') {
-      if (!bucketList[bucketList.length - 1].item.trim()) {
+      const lastBucket = bucketList[bucketList.length - 1] || {};
+      const itemText = typeof lastBucket.item === 'string' ? lastBucket.item.trim() : '';
+      if (!itemText) {
         Alert.alert("Validation Error", "Please fill in the current 'Bucket List' item before adding a new one.");
         return;
       }
