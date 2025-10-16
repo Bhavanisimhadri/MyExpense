@@ -70,32 +70,21 @@ const LoginScreen = ({ navigation }) => {
             if (rememberMe) await AsyncStorage.setItem('rememberedMobile', mobile);
             else await AsyncStorage.removeItem('rememberedMobile');
 
-           if (user.category) {
-  const screenMap = {
-    Women: 'WomenScreen',
-    Men: 'MenScreen',
-    Student: 'StudentScreen',
-    Elder: 'ElderScreen',
-    Partners: 'PartnersScreen',
-    Friends: 'FriendsScreen',
-  };
-
-  db.transaction(tx => {
-    tx.executeSql('DELETE FROM Session');
-    tx.executeSql('INSERT INTO Session (mobile) VALUES (?)', [mobile]);
-  });
-
-  navigation.replace(screenMap[user.category], { mobile, name: user.name });
-} else {
-  db.transaction(tx => {
-    tx.executeSql('DELETE FROM Session');
-    tx.executeSql('INSERT INTO Session (mobile) VALUES (?)', [mobile]);
-  });
-
-  navigation.replace('Home', { mobile, name: user.name });
-}
-
-            
+            if (user.category) {
+              const screenMap = {
+                Women: 'WomenScreen',
+                Men: 'MenScreen',
+                Student: 'StudentScreen',
+                Elder: 'ElderScreen',
+                Partners: 'PartnersScreen',
+                Friends: 'FriendsScreen',
+              };
+              console.log("Login - Navigating to category screen with:", { mobile, name: user.name });
+              navigation.replace(screenMap[user.category], { mobile, name: user.name });
+            } else {
+              console.log("Login - Navigating to Home with:", { mobile, name: user.name });
+              navigation.replace('Home', { mobile, name: user.name });
+            }
           } else {
             Alert.alert(
               'New User',

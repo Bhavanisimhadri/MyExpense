@@ -430,28 +430,23 @@ const FriendsScreen = ({ route, navigation }) => {
     );
   };
 
-const handleLogout = () => {
-  Alert.alert("Logout", "Are you sure you want to logout?", [
-    { text: "Cancel", style: "cancel" },
-    {
-      text: "Logout",
-      onPress: () => {
-        // ✅ Clear saved session from SQLite
-        db.transaction(tx => {
-          tx.executeSql(
-            'DELETE FROM Session',
-            [],
-            () => console.log("✅ Session cleared successfully"),
-            err => console.log("❌ Error clearing session:", err)
-          );
-        });
-
-        // 🔹 Navigate to Login screen
-        navigation.navigate('Login');
-      },
-    },
-  ]);
-};
+ const handleLogout = () => {
+     Alert.alert("Logout", "Are you sure you want to logout?", [
+       { text: "Cancel", style: "cancel" },
+       {
+         text: "Logout",
+         onPress: async () => {
+           try {
+       
+             navigation.navigate('Login');
+           } catch (e) {
+             console.error("Logout error:", e);
+             Alert.alert("Error", "An error occurred during logout.");
+           }
+         },
+       },
+     ]);
+   };
 
   // --- Main Render ---
   return (

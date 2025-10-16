@@ -253,38 +253,30 @@ const setReminderForNote = (index) => {
   const handleAddRow = (section) => {
     // Validation: Prevent adding a new row if the last one is empty
     if (section === 'needs') {
-      const lastNeed = needs[needs.length - 1] || {};
-      const element = typeof lastNeed.element === 'string' ? lastNeed.element.trim() : '';
-      const amount = typeof lastNeed.amount === 'string' ? lastNeed.amount.trim() : '';
-      if (!element || !amount) {
+      const lastNeed = needs[needs.length - 1];
+      if (!lastNeed.element.trim() || !lastNeed.amount.trim()) {
         Alert.alert("Validation Error", "Please fill in the current 'Need' before adding a new one.");
         return;
       }
       setNeeds([...needs, { element: '', amount: '' }]);
     }
     if (section === 'wants') {
-      const lastWant = wants[wants.length - 1] || {};
-      const element = typeof lastWant.element === 'string' ? lastWant.element.trim() : '';
-      const amount = typeof lastWant.amount === 'string' ? lastWant.amount.trim() : '';
-      if (!element || !amount) {
+      const lastWant = wants[wants.length - 1];
+      if (!lastWant.element.trim() || !lastWant.amount.trim()) {
         Alert.alert("Validation Error", "Please fill in the current 'Want' before adding a new one.");
         return;
       }
       setWants([...wants, { element: '', amount: '' }]);
     }
     if (section === 'notes') {
-      const lastNote = notes[notes.length - 1];
-      const noteText = typeof lastNote === 'string' ? lastNote.trim() : '';
-      if (!noteText) {
+      if (!notes[notes.length - 1].trim()) {
         Alert.alert("Validation Error", "Please fill in the current 'Note' before adding a new one.");
         return;
       }
       setNotes([...notes, '']);
     }
     if (section === 'bucket') {
-      const lastBucket = bucketList[bucketList.length - 1] || {};
-      const itemText = typeof lastBucket.item === 'string' ? lastBucket.item.trim() : '';
-      if (!itemText) {
+      if (!bucketList[bucketList.length - 1].item.trim()) {
         Alert.alert("Validation Error", "Please fill in the current 'Bucket List' item before adding a new one.");
         return;
       }
@@ -502,31 +494,22 @@ const setReminderForNote = (index) => {
           <View style={styles.welcomeContainer}>
             <Text style={styles.welcomeText}>Welcome, {name}</Text>
             <TouchableOpacity
-           onPress={async () => {
-  Alert.alert(
-    "Logout",
-    "Are you sure you want to logout?",
-    [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Logout",
-        onPress: () => {
-          // ✅ Clear session from SQLite
-          db.transaction(tx => {
-            tx.executeSql('DELETE FROM Session', [], 
-              () => console.log("✅ Session cleared on logout"),
-              (err) => console.log("❌ Error clearing session:", err)
-            );
-          });
-
-          // 🔹 Navigate back to Login screen
-          navigation.navigate('Login');
-        }
-      }
-    ]
-  );
-}}
-  style={styles.logoutIconButton}
+              onPress={async () => {
+                Alert.alert(
+                  "Logout",
+                  "Are you sure you want to logout?",
+                  [
+                    { text: "Cancel", style: "cancel" },
+                    {
+                      text: "Logout", onPress: async () => {
+                        // clear user data
+                        navigation.navigate('Login');
+                      }
+                    }
+                  ]
+                );
+              }}
+              style={styles.logoutIconButton}
             >
               <Text style={styles.logoutText}>Logout</Text>
             </TouchableOpacity>
