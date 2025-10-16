@@ -211,11 +211,27 @@ const ElderScreen = ({ route, navigation }) => {
   };
 
   const handleLogout = () => {
-    Alert.alert("Logout", "Are you sure you want to logout?", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Logout", onPress: () => navigation.navigate('Login') },
-    ]);
-  };
+  Alert.alert("Logout", "Are you sure you want to logout?", [
+    { text: "Cancel", style: "cancel" },
+    {
+      text: "Logout",
+      onPress: () => {
+        // ✅ Clear saved session from SQLite
+        db.transaction(tx => {
+          tx.executeSql(
+            'DELETE FROM Session',
+            [],
+            () => console.log("✅ Session cleared successfully"),
+            err => console.log("❌ Error clearing session:", err)
+          );
+        });
+
+        // 🔹 Navigate to Login screen
+        navigation.navigate('Login');
+      },
+    },
+  ]);
+};
 
   // --- Render Functions ---
   const renderDailyEssentials = () => (

@@ -395,20 +395,30 @@ const MenScreen = ({ route, navigation }) => {
             <Text style={styles.welcomeText}>Welcome, {name}</Text></View>
             <TouchableOpacity
               onPress={async () => {
-                Alert.alert(
-                  "Logout",
-                  "Are you sure you want to logout?",
-                  [
-                    { text: "Cancel", style: "cancel" },
-                    {
-                      text: "Logout", onPress: async () => {
-                        // clear user data
-                        navigation.navigate('Login');
-                      }
-                    }
-                  ]
-                );
-              }}
+  Alert.alert(
+    "Logout",
+    "Are you sure you want to logout?",
+    [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Logout",
+        onPress: () => {
+          // ✅ Clear session from SQLite
+          db.transaction(tx => {
+            tx.executeSql('DELETE FROM Session', [], 
+              () => console.log("✅ Session cleared on logout"),
+              (err) => console.log("❌ Error clearing session:", err)
+            );
+          });
+
+          // 🔹 Navigate back to Login screen
+          navigation.navigate('Login');
+        }
+      }
+    ]
+  );
+}}
+
               style={styles.logoutIconButton}
             >
               <Text style={styles.logoutText}>Logout</Text>

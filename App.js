@@ -1,12 +1,12 @@
-// App.js
-import React, { useEffect } from 'react';
-import { Platform } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, View, Platform } from 'react-native';
+import SQLite from 'react-native-sqlite-storage';
 import PushNotification from 'react-native-push-notification';
 import messaging from '@react-native-firebase/messaging';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-// 🧭 Screens
+// 📱 Screens (keep yours)
 import SplashScreen from './Screens/Splash';
 import LoginScreen from './Screens/Login';
 import SignUpScreen from './Screens/SignUpScreen';
@@ -20,15 +20,82 @@ import FriendsScreen from './Screens/FriendsScreen';
 import AdminLoginScreen from './Screens/AdminLogin';
 import AdminPanelScreen from './Screens/AdminPanel';
 
-// Create stack navigator
+const db = SQLite.openDatabase({ name: 'ExpenseDB.db', location: 'default' });
 const Stack = createNativeStackNavigator();
 
 export default function App() {
+  const [initialRoute, setInitialRoute] = useState(null);
+
+  // 🔹 Check for saved session
   useEffect(() => {
-    // ✅ Step 1: Create notification channel (Android)
+    db.transaction(tx => {
+      // Ensure Session table exists
+      tx.executeSql(
+        `CREATE TABLE IF NOT EXISTS Session (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          mobile TEXT
+        );`
+      );
+
+      // Read saved session
+      tx.executeSql(
+        'SELECT mobile FROM Session LIMIT 1;',
+        [],
+        (_, sessionResult) => {
+          if (sessionResult.rows.length > 0) {
+            const mobile = sessionResult.rows.item(0).mobile;
+            console.log("📱 Restoring session for:", mobile);
+
+            // Find user details from Users table
+            tx.executeSql(
+              'SELECT * FROM Users WHERE mobile = ?;',
+              [mobile],
+              (_, userResult) => {
+                if (userResult.rows.length > 0) {
+                  const user = userResult.rows.item(0);
+                  const screenMap = {
+                    Women: 'WomenScreen',
+                    Men: 'MenScreen',
+                    Student: 'StudentScreen',
+                    Elder: 'ElderScreen',
+                    Partners: 'PartnersScreen',
+                    Friends: 'FriendsScreen',
+                  };
+
+                  setInitialRoute(
+                    user.category ? screenMap[user.category] : 'Home'
+                  );
+                } else {
+                  setInitialRoute('Login');
+                }
+              }
+            );
+          } else {
+            setInitialRoute('Splash');
+          }
+        },
+        err => {
+          console.log("❌ Session check error:", err);
+          setInitialRoute('Splash');
+        }
+      );
+    });
+  }, []);
+
+  // Show loading indicator
+  if (!initialRoute) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#D35225" />
+      </View>
+    );
+  }
+
+  // 🔹 Your existing notification + Firebase setup stays as is
+  useEffect(() => {
     PushNotification.createChannel(
       {
-        channelId: "default-channel-id", // must match the ID used in WomenScreen.js
+        channelId: "default-channel-id",
         channelName: "Reminders",
         importance: 4,
         soundName: "default",
@@ -37,7 +104,6 @@ export default function App() {
       (created) => console.log("📢 Notification channel created:", created)
     );
 
-    // ✅ Step 2: Configure local notification behavior
     PushNotification.configure({
       onNotification: (notification) => {
         console.log("🔔 Local Notification received:", notification);
@@ -45,35 +111,16 @@ export default function App() {
       requestPermissions: Platform.OS === 'ios',
     });
 
-    // ✅ Step 3: Initialize Firebase Messaging (FCM)
     async function initFirebase() {
       try {
-        // Ask user for permission (mainly needed on iOS)
         const authStatus = await messaging().requestPermission();
-        const enabled =
+        if (
           authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
-          authStatus === messaging.AuthorizationStatus.PROVISIONAL;
-
-        if (enabled) {
-          console.log("✅ FCM permission granted");
+          authStatus === messaging.AuthorizationStatus.PROVISIONAL
+        ) {
           const token = await messaging().getToken();
           console.log("📱 FCM Token:", token);
-          // You can save this token in SQLite or send to your backend for remote notifications
-        } else {
-          console.log("⚠️ FCM permission denied");
         }
-
-        // Handle messages when app is in background/quit state
-        messaging().setBackgroundMessageHandler(async (remoteMessage) => {
-          console.log("💬 Background FCM Message:", remoteMessage);
-        });
-
-        // Foreground messages
-        const unsubscribe = messaging().onMessage(async (remoteMessage) => {
-          console.log("📨 Foreground FCM Message:", remoteMessage);
-        });
-
-        return unsubscribe;
       } catch (error) {
         console.log("🔥 FCM init error:", error);
       }
@@ -82,10 +129,10 @@ export default function App() {
     initFirebase();
   }, []);
 
-  // ✅ Step 4: Keep your navigation as is
+  // 🔹 Navigation
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="Splash">
+      <Stack.Navigator initialRouteName={initialRoute}>
         <Stack.Screen name="Splash" component={SplashScreen} options={{ headerShown: false }} />
         <Stack.Screen name="SignUp" component={SignUpScreen} options={{ headerShown: false }} />
         <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />

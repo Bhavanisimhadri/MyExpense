@@ -41,34 +41,52 @@ useEffect(() => {
 
 
   const handleSignUp = () => {
-    const trimmedName = name.trim();
-    const trimmedMobile = mobile.trim();
-    if (!trimmedName) return Alert.alert('Error', 'Enter your name');
-    if (trimmedMobile.length !== 10) return Alert.alert('Error', 'Enter a valid 10-digit number');
+  const trimmedName = name.trim();
+  const trimmedMobile = mobile.trim();
 
-    db.transaction(tx => {
-      tx.executeSql(
-        'SELECT * FROM Users WHERE mobile = ?',
-        [trimmedMobile],
-        (_, results) => {
-          if (results.rows.length > 0) {
-            Alert.alert('Error', 'Mobile number already exists');
-          } else {
-            tx.executeSql(
-              'INSERT INTO Users (name, mobile) VALUES (?, ?)',
-              [trimmedName, trimmedMobile],
-              () => {
-                console.log("SignUp - Navigating to Home with:", { mobile: trimmedMobile, name: trimmedName });
-                navigation.replace('Home', { mobile: trimmedMobile, name: trimmedName });
-              },
-              err => console.log('Insert error:', err)
-            );
-          }
-        },
-        err => console.log('Select error:', err)
-      );
-    });
-  };
+  if (!trimmedName) return Alert.alert('Error', 'Enter your name');
+  if (trimmedMobile.length !== 10) return Alert.alert('Error', 'Enter a valid 10-digit number');
+
+  db.transaction(tx => {
+    // Create Session table if it doesn't exist
+    tx.executeSql(
+      `CREATE TABLE IF NOT EXISTS Session (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        mobile TEXT
+      );`
+    );
+
+    // Check if user already exists
+    tx.executeSql(
+      'SELECT * FROM Users WHERE mobile = ?',
+      [trimmedMobile],
+      (_, results) => {
+        if (results.rows.length > 0) {
+          Alert.alert('Error', 'Mobile number already exists');
+        } else {
+          // Insert new user
+          tx.executeSql(
+            'INSERT INTO Users (name, mobile) VALUES (?, ?)',
+            [trimmedName, trimmedMobile],
+            () => {
+              console.log("✅ User created:", { mobile: trimmedMobile, name: trimmedName });
+
+              // ✅ Save session for auto-login
+              tx.executeSql('DELETE FROM Session'); // clear any old session
+              tx.executeSql('INSERT INTO Session (mobile) VALUES (?)', [trimmedMobile]);
+
+              // Navigate to Home
+              navigation.replace('Home', { mobile: trimmedMobile, name: trimmedName });
+            },
+            err => console.log('Insert error:', err)
+          );
+        }
+      },
+      err => console.log('Select error:', err)
+    );
+  });
+};
+
 
   return (
     <View style={styles.container}>
