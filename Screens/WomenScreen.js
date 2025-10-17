@@ -14,14 +14,10 @@ import {
   BackHandler
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import DatabaseHelper from '../Screens/DatabaseHelper';
-import PushNotification from 'react-native-push-notification';
-import { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
-import '../Screens/NotificationService'; // Ensure notification service is initialized
-
-
 const WomenScreen = ({ route, navigation }) => {
-  const { name, mobile } = route.params;  // mobileNumber is used as a key for storage
+   const { name, mobile } = route.params;  // mobileNumber is used as a key for storage
 
   const [selectedSection, setSelectedSection] = useState(null);
   const [showReports, setShowReports] = useState(false);
@@ -43,11 +39,6 @@ const WomenScreen = ({ route, navigation }) => {
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth() + 1;
   const financialDataKey = `financials_${currentYear}_${currentMonth}`;
-
-
-  const [showPicker, setShowPicker] = useState(false);
-  const [pickerDate, setPickerDate] = useState(new Date());
-  const [selectedNoteIndex, setSelectedNoteIndex] = useState(null);
 
   // --- Data Persistence Logic ---
   useEffect(() => {
@@ -71,90 +62,9 @@ const WomenScreen = ({ route, navigation }) => {
     return () => backHandler.remove();
   }, []);
 
-const setReminderForNote = (index) => {
-  console.log("Setting reminder for note index:", index);
   
-  if (!notes[index] || !notes[index].trim()) {
-    Alert.alert("Empty Note", "Please enter a note before setting a reminder.");
-    return;
-  }
 
-  setSelectedNoteIndex(index);
-
-  if (Platform.OS === 'android') {
-    // First open date picker
-    DateTimePickerAndroid.open({
-      value: new Date(Date.now() + 60000), // Default to 1 minute from now
-      mode: 'date',
-      minimumDate: new Date(), // Prevent past dates
-      is24Hour: true,
-      onChange: (event, date) => {
-        if (event.type === 'set' && date) {
-          // Then open time picker
-          DateTimePickerAndroid.open({
-            value: date,
-            mode: 'time',
-            minimumDate: new Date(), // Prevent past times
-            is24Hour: true,
-            onChange: (event2, time) => {
-              if (event2.type === 'set' && time) {
-                // Combine date and time
-                const finalDate = new Date(
-                  date.getFullYear(),
-                  date.getMonth(),
-                  date.getDate(),
-                  time.getHours(),
-                  time.getMinutes()
-                );
-                onDateTimeChange({ type: 'set' }, finalDate);
-              }
-            },
-          });
-        }
-      },
-    });
-  } else {
-    // iOS - use inline picker
-    setPickerDate(new Date(Date.now() + 60000)); // 1 minute from now
-    setShowPicker(true);
-  }
-};
-
-
-  const onDateTimeChange = async (event, selectedDate) => {
-    setShowPicker(false);
-    if (event.type === "dismissed" || !selectedDate) return;
-
-    const noteText = notes[selectedNoteIndex];
-    const reminderTime = selectedDate.toISOString();
-
-    try {
-      // Save reminder in SQLite
-      const result = await DatabaseHelper.saveReminder(mobile, noteText, reminderTime);
-      const reminderId = result.insertId;
-
-      // Schedule local notification
-      PushNotification.localNotificationSchedule({
-        channelId: "default-channel-id",
-        title: "Reminder ⏰",
-        message: noteText,
-        date: selectedDate,
-        allowWhileIdle: true,
-        playSound: true,
-        soundName: "default",
-        importance: "high",
-        userInfo: { id: reminderId },
-      });
-
-      Alert.alert("Reminder Set", `You'll be notified at ${selectedDate.toLocaleString()}`);
-    } catch (error) {
-      console.error("Failed to set reminder:", error);
-      Alert.alert("Error", "Could not schedule reminder.");
-    }
-  };
-
-
-  useEffect(() => {
+    useEffect(() => {
     const loadData = async () => {
       try {
         // Load current month's financial data
@@ -198,7 +108,7 @@ const setReminderForNote = (index) => {
 
         // Save current month's financial data
         await DatabaseHelper.saveUserData(mobile, financialDataKey, currentFinancials);
-
+        
         // Save persistent data
         await DatabaseHelper.saveUserData(mobile, 'notes', notes);
         await DatabaseHelper.saveUserData(mobile, 'bucketList', bucketList);
@@ -355,22 +265,9 @@ const setReminderForNote = (index) => {
               <Ionicons name={item.done ? "checkmark-circle" : "ellipse-outline"} size={28} color="#28a745" />
             </TouchableOpacity>
           ) : (
-            <View style={{ flexDirection: 'row' }}>
-              {/* Show alarm icon only if section is "Reminders" or "Notes" */}
-              {section === 'notes' ? (
-                <TouchableOpacity
-                  onPress={() => setReminderForNote(index)}
-                  style={{ marginRight: 8 }}
-                >
-                  <Ionicons name="alarm-outline" size={28} color="#2C9C94" />
-                </TouchableOpacity>
-              ) : null}
-
-              <TouchableOpacity onPress={() => handleRemoveRow(section, index)}>
-                <Ionicons name="remove-circle-outline" size={28} color="#d9534f" />
-              </TouchableOpacity>
-            </View>
-
+            <TouchableOpacity onPress={() => handleRemoveRow(section, index)}>
+              <Ionicons name="remove-circle-outline" size={28} color="#d9534f" />
+            </TouchableOpacity>
           )}
         </View>
       ))}
@@ -592,17 +489,6 @@ const setReminderForNote = (index) => {
           )}
         </ScrollView>
       </KeyboardAvoidingView>
-      {showPicker && (
-  <DateTimePicker
-    value={pickerDate}
-    mode="datetime"
-    minimumDate={new Date()} // Prevent past dates
-    is24Hour={true}
-    display="default"
-    onChange={onDateTimeChange}
-  />
-)}
-
     </ImageBackground>
   );
 };

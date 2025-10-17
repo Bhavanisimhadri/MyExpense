@@ -93,14 +93,6 @@ android {
             keyPassword 'android'
         }
     }
-    configurations.all {
-    resolutionStrategy {
-        force 'androidx.core:core:1.13.1'
-        force 'androidx.appcompat:appcompat:1.6.1'
-        force 'androidx.annotation:annotation:1.7.0'
-    }
-}
-
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
@@ -126,4 +118,3 @@ dependencies {
     }
 }
 apply from: "../../node_modules/react-native-vector-icons/fonts.gradle"
-apply plugin: 'com.google.gms.google-services'
